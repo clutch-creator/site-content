@@ -1,0 +1,704 @@
+---
+title: "Components"
+description: "Comprehensive guide to Clutch components"
+---
+
+# Components
+
+Clutch provides a rich set of components that integrate seamlessly with Next.js and the visual editor. These components are optimized for performance and designed for both visual editing and code-based development.
+
+## Layout Components
+
+### Container
+
+A wrapper component for content with configurable max-width and padding.
+
+```typescript
+<Container maxWidth="lg" padding="medium">
+  <h1>Content goes here</h1>
+</Container>
+```
+
+### Grid
+
+Responsive grid layout system:
+
+```typescript
+<Grid cols={3} gap="large" responsive>
+  <GridItem><Card>1</Card></GridItem>
+  <GridItem><Card>2</Card></GridItem>
+  <GridItem><Card>3</Card></GridItem>
+</Grid>
+```
+
+### Flex
+
+Flexible box layout:
+
+```typescript
+<Flex direction="row" justify="between" align="center" gap="medium">
+  <div>Left</div>
+  <div>Right</div>
+</Flex>
+```
+
+## Media Components
+
+### Image
+
+Optimized image component with automatic optimization:
+
+```typescript
+import { Image } from '@clutch-creator/toolkit/components/Image';
+
+// Responsive image with fill
+<div className="relative h-96">
+  <Image
+    src="/hero.jpg"
+    alt="Hero image"
+    fill
+    priority
+    className="object-cover"
+  />
+</div>
+
+// Fixed size image
+<Image
+  src="/logo.png"
+  alt="Logo"
+  width={200}
+  height={100}
+  quality={90}
+/>
+```
+
+**Props:**
+- `src` (string): Image URL or path
+- `alt` (string): Alt text for accessibility
+- `width` (number): Width in pixels
+- `height` (number): Height in pixels
+- `fill` (boolean): Fill parent container
+- `priority` (boolean): Load image immediately (for above-fold images)
+- `quality` (number): Image quality (1-100)
+- `className` (string): Additional CSS classes
+
+### ClientImage
+
+Client-side image component for dynamic images:
+
+```typescript
+import { ClientImage } from '@clutch-creator/toolkit/components/ClientImage';
+
+<ClientImage
+  src={dynamicImageUrl}
+  alt="Dynamic image"
+  width={400}
+  height={300}
+/>
+```
+
+### Svg
+
+SVG component for vector graphics:
+
+```typescript
+import { Svg } from '@clutch-creator/toolkit/components/Svg';
+
+<Svg
+  src="/icon.svg"
+  width={24}
+  height={24}
+  className="text-blue-500"
+/>
+```
+
+### Video
+
+Video player component:
+
+```typescript
+<Video
+  src="/video.mp4"
+  poster="/thumbnail.jpg"
+  controls
+  autoplay={false}
+  loop={false}
+  muted={false}
+/>
+```
+
+## Typography Components
+
+### Heading
+
+Semantic heading component:
+
+```typescript
+<Heading level={1} size="xl">
+  Main Heading
+</Heading>
+
+<Heading level={2} size="lg">
+  Subheading
+</Heading>
+```
+
+### Text
+
+Paragraph and text component:
+
+```typescript
+<Text size="medium" color="gray-700">
+  This is a paragraph of text.
+</Text>
+```
+
+### RichText
+
+Render rich text content:
+
+```typescript
+import { RichText } from '@clutch-creator/toolkit/components/RichText';
+
+// With HTML string
+<RichText content={htmlContent} />
+
+// With JSX
+<RichText>
+  <p>Paragraph with <strong>bold</strong> text</p>
+  <ul>
+    <li>Item 1</li>
+    <li>Item 2</li>
+  </ul>
+</RichText>
+```
+
+## Navigation Components
+
+### Link
+
+Enhanced link component with built-in optimization:
+
+```typescript
+import { Link } from '@clutch-creator/toolkit/components/Link';
+
+// Internal link
+<Link href="/about">About Us</Link>
+
+// External link
+<Link href="https://example.com" external>
+  Visit Example
+</Link>
+
+// With additional params
+<Link 
+  href="/products" 
+  params={{ category: 'books', sort: 'price' }}
+>
+  View Books
+</Link>
+```
+
+**Props:**
+- `href` (string): Target URL
+- `external` (boolean): Open in new tab
+- `params` (object): Query parameters
+- `className` (string): CSS classes
+- `children` (ReactNode): Link content
+
+### Navigation
+
+Navigation menu component:
+
+```typescript
+<Navigation>
+  <NavItem href="/">Home</NavItem>
+  <NavItem href="/about">About</NavItem>
+  <NavItem href="/services">Services</NavItem>
+  <NavItem href="/contact">Contact</NavItem>
+</Navigation>
+```
+
+## Interactive Components
+
+### Button
+
+Button component with variants:
+
+```typescript
+<Button 
+  variant="primary" 
+  size="medium"
+  onClick={handleClick}
+>
+  Click Me
+</Button>
+
+// Variants: primary, secondary, outline, ghost
+// Sizes: small, medium, large
+```
+
+### Form Components
+
+#### Input
+
+```typescript
+<Input
+  type="text"
+  placeholder="Enter your name"
+  value={name}
+  onChange={(e) => setName(e.target.value)}
+  required
+/>
+```
+
+#### TextArea
+
+```typescript
+<TextArea
+  placeholder="Enter your message"
+  value={message}
+  onChange={(e) => setMessage(e.target.value)}
+  rows={5}
+/>
+```
+
+#### Select
+
+```typescript
+<Select
+  value={selected}
+  onChange={(e) => setSelected(e.target.value)}
+  options={[
+    { value: 'option1', label: 'Option 1' },
+    { value: 'option2', label: 'Option 2' },
+  ]}
+/>
+```
+
+#### Checkbox
+
+```typescript
+<Checkbox
+  checked={isChecked}
+  onChange={(e) => setIsChecked(e.target.checked)}
+  label="Accept terms"
+/>
+```
+
+#### Radio
+
+```typescript
+<RadioGroup value={selected} onChange={setSelected}>
+  <Radio value="option1" label="Option 1" />
+  <Radio value="option2" label="Option 2" />
+</RadioGroup>
+```
+
+### Modal
+
+Modal/dialog component:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+
+function ModalExample() {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  return (
+    <>
+      <Button onClick={() => setIsOpen(true)}>Open Modal</Button>
+      
+      <Modal 
+        isOpen={isOpen} 
+        onClose={() => setIsOpen(false)}
+        title="Modal Title"
+      >
+        <p>Modal content goes here</p>
+      </Modal>
+    </>
+  );
+}
+```
+
+### Accordion
+
+Expandable content sections:
+
+```typescript
+<Accordion>
+  <AccordionItem title="Section 1">
+    <p>Content for section 1</p>
+  </AccordionItem>
+  <AccordionItem title="Section 2">
+    <p>Content for section 2</p>
+  </AccordionItem>
+</Accordion>
+```
+
+### Tabs
+
+Tabbed content:
+
+```typescript
+<Tabs defaultTab="tab1">
+  <TabList>
+    <Tab id="tab1">Tab 1</Tab>
+    <Tab id="tab2">Tab 2</Tab>
+  </TabList>
+  <TabPanels>
+    <TabPanel id="tab1">Content 1</TabPanel>
+    <TabPanel id="tab2">Content 2</TabPanel>
+  </TabPanels>
+</Tabs>
+```
+
+## Utility Components
+
+### Seo
+
+SEO meta tags component:
+
+```typescript
+import { Seo } from '@clutch-creator/toolkit/components/Seo';
+
+<Seo
+  title="Page Title"
+  description="Page description for SEO"
+  keywords={['keyword1', 'keyword2']}
+  openGraph={{
+    title: 'OG Title',
+    description: 'OG Description',
+    type: 'website',
+    url: 'https://example.com/page',
+    images: [
+      {
+        url: 'https://example.com/og-image.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'OG Image',
+      },
+    ],
+  }}
+  twitter={{
+    card: 'summary_large_image',
+    site: '@username',
+    creator: '@username',
+  }}
+/>
+```
+
+### Slot
+
+Pass props to children components:
+
+```typescript
+import { Slot } from '@clutch-creator/toolkit/components/Slot';
+
+<Slot className="additional-class" data-id="123">
+  <Button>Click Me</Button>
+</Slot>
+// Button receives className and data-id props
+```
+
+### ApplyHooks
+
+Apply hooks to components:
+
+```typescript
+import { ApplyHooks } from '@clutch-creator/toolkit/components/ApplyHooks';
+
+<ApplyHooks hooks={[useCustomHook1, useCustomHook2]}>
+  <Content />
+</ApplyHooks>
+```
+
+### NotFoundRedirect
+
+Handle 404 redirects:
+
+```typescript
+import { NotFoundRedirect } from '@clutch-creator/toolkit/components/NotFoundRedirect';
+
+<NotFoundRedirect 
+  condition={!data}
+  redirectTo="/404"
+/>
+```
+
+## Card Components
+
+### Basic Card
+
+```typescript
+<Card>
+  <CardHeader>
+    <Heading level={3}>Card Title</Heading>
+  </CardHeader>
+  <CardBody>
+    <Text>Card content goes here</Text>
+  </CardBody>
+  <CardFooter>
+    <Button>Action</Button>
+  </CardFooter>
+</Card>
+```
+
+### Product Card
+
+```typescript
+<ProductCard
+  image="/product.jpg"
+  title="Product Name"
+  price={99.99}
+  description="Product description"
+  onAddToCart={handleAddToCart}
+/>
+```
+
+## List Components
+
+### List
+
+Render lists of items:
+
+```typescript
+<List
+  items={items}
+  renderItem={(item) => (
+    <ListItem key={item.id}>
+      <Text>{item.title}</Text>
+    </ListItem>
+  )}
+/>
+```
+
+### Grid List
+
+Grid layout for items:
+
+```typescript
+<GridList
+  items={products}
+  cols={3}
+  gap="medium"
+  renderItem={(product) => (
+    <ProductCard key={product.id} product={product} />
+  )}
+/>
+```
+
+## Section Components
+
+### Hero
+
+Hero section component:
+
+```typescript
+<Hero
+  title="Welcome to Our Site"
+  subtitle="Building amazing experiences"
+  backgroundImage="/hero-bg.jpg"
+  cta={
+    <Button variant="primary" size="large">
+      Get Started
+    </Button>
+  }
+/>
+```
+
+### Feature Section
+
+```typescript
+<FeatureSection
+  title="Our Features"
+  features={[
+    {
+      icon: '🚀',
+      title: 'Fast',
+      description: 'Blazing fast performance',
+    },
+    {
+      icon: '🎨',
+      title: 'Beautiful',
+      description: 'Stunning designs',
+    },
+  ]}
+/>
+```
+
+### Testimonial
+
+```typescript
+<Testimonial
+  quote="This is the best product I've ever used!"
+  author="John Doe"
+  role="CEO, Company Inc."
+  avatar="/john.jpg"
+/>
+```
+
+## WordPress Components
+
+### WordPress Post
+
+```typescript
+<WordPressPost
+  postId={123}
+  showFeaturedImage
+  showAuthor
+  showDate
+/>
+```
+
+### WordPress Post List
+
+```typescript
+<WordPressPostList
+  category="news"
+  limit={5}
+  showExcerpt
+/>
+```
+
+## Component Configuration
+
+### Registering Components
+
+Register custom components for the visual editor:
+
+```typescript
+import { clutchElementConfig } from '@clutch-creator/toolkit';
+
+const CustomButton = ({ children, variant = 'primary' }) => (
+  <button className={`btn btn-${variant}`}>
+    {children}
+  </button>
+);
+
+clutchElementConfig(CustomButton, {
+  icon: '🔘',
+  styleSelectors: [
+    { name: 'Default', value: '&' },
+    { name: 'Hover', value: '&:hover' },
+    { name: 'Active', value: '&:active' },
+    { name: 'Disabled', value: '&:disabled' },
+  ],
+});
+
+export default CustomButton;
+```
+
+### Component Props Types
+
+Use TypeScript for type-safe components:
+
+```typescript
+import type { Controls } from '@clutch-creator/toolkit';
+
+type CardProps = {
+  title: string;
+  description: string;
+  image: Controls['Media'];
+  /**
+   * Button variant
+   * @control Select
+   */
+  variant: 'primary' | 'secondary';
+  /**
+   * Enable shadow
+   * @control Checkbox
+   */
+  shadow: boolean;
+};
+
+export function Card(props: CardProps) {
+  // Component implementation
+}
+```
+
+## Best Practices
+
+### 1. Component Composition
+
+Build complex UIs from simple components:
+
+```typescript
+// ✅ Good: Composable
+<Card>
+  <CardHeader>
+    <Heading>Title</Heading>
+  </CardHeader>
+  <CardBody>
+    <Text>Content</Text>
+  </CardBody>
+</Card>
+
+// ❌ Avoid: Monolithic
+<Card 
+  title="Title" 
+  content="Content" 
+  showHeader 
+  showFooter 
+/>
+```
+
+### 2. Performance
+
+Use appropriate component types:
+
+```typescript
+// Server Component (no 'use client' - default)
+async function BlogPost() {
+  const post = await fetchPost(); // Runs on server
+  return <Article>{post.content}</Article>;
+}
+
+// Client Component (needs interactivity)
+'use client';
+function InteractiveButton() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
+
+### 3. Accessibility
+
+Ensure components are accessible:
+
+```typescript
+<Button 
+  aria-label="Close modal"
+  onClick={handleClose}
+>
+  <Icon name="close" aria-hidden="true" />
+</Button>
+
+<Image 
+  src="/hero.jpg" 
+  alt="Team working together in office" // Descriptive alt text
+/>
+```
+
+### 4. Responsive Design
+
+Design mobile-first:
+
+```typescript
+<Grid 
+  cols={{ mobile: 1, tablet: 2, desktop: 3 }}
+  gap={{ mobile: 'small', desktop: 'large' }}
+>
+  {items.map(item => <Card key={item.id} {...item} />)}
+</Grid>
+```
+
+---
+
+**Next Steps:**
+- [State Management](/docs/state-management) - Learn about state
+- [Custom Components](/docs/custom-components) - Build custom components
+- [Queries](/docs/queries) - Fetch and bind data
+- [Styling](/docs/styling) - Style components

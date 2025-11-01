@@ -1,0 +1,378 @@
+---
+title: "Getting Started"
+description: "Learn how to create your first Clutch project"
+---
+
+# Getting Started
+
+This guide will walk you through creating your first Clutch project and building your first page.
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- **Node.js**: Version 18 or higher
+- **npm**, **yarn**, **pnpm**, or **bun**: Package manager of your choice
+- Basic understanding of web development concepts
+- (Optional) Familiarity with React and Next.js
+
+## Installation
+
+### Install Clutch Toolkit
+
+Start by installing the Clutch Toolkit in your Next.js project:
+
+```bash
+npm install @clutch-creator/toolkit
+# or
+yarn add @clutch-creator/toolkit
+# or
+pnpm add @clutch-creator/toolkit
+# or
+bun add @clutch-creator/toolkit
+```
+
+### Project Setup
+
+If you're starting a new project, create a Next.js app first:
+
+```bash
+npx create-next-app@latest my-clutch-site
+cd my-clutch-site
+```
+
+During setup, choose:
+- TypeScript: Yes (recommended)
+- ESLint: Yes
+- Tailwind CSS: Your preference
+- App Router: Yes (required)
+- Import alias: Your preference
+
+## Basic Configuration
+
+### 1. Configure Next.js
+
+Update your `next.config.js` to work with Clutch:
+
+```javascript
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  transpilePackages: ['@clutch-creator/toolkit'],
+  images: {
+    formats: ['image/avif', 'image/webp'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+  },
+};
+
+module.exports = nextConfig;
+```
+
+### 2. Set Up Environment Variables
+
+Create a `.env.local` file in your project root:
+
+```bash
+# Clutch Configuration
+NEXT_PUBLIC_SITE_URL=http://localhost:3000
+
+# Optional: WordPress Integration
+# WORDPRESS_API_URL=https://your-wordpress-site.com/wp-json
+```
+
+## Creating Your First Page
+
+### 1. Create a Basic Layout
+
+Create `app/layout.tsx`:
+
+```typescript
+import type { Metadata } from 'next';
+import './globals.css';
+
+export const metadata: Metadata = {
+  title: 'My Clutch Site',
+  description: 'Built with Clutch Creator',
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
+}
+```
+
+### 2. Create Your Home Page
+
+Create `app/page.tsx`:
+
+```typescript
+export default function Home() {
+  return (
+    <main className="min-h-screen p-8">
+      <h1 className="text-4xl font-bold mb-4">
+        Welcome to Clutch
+      </h1>
+      <p className="text-lg text-gray-600">
+        Start building your high-performance website
+      </p>
+    </main>
+  );
+}
+```
+
+### 3. Run Your Development Server
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Visit [http://localhost:3000](http://localhost:3000) to see your site.
+
+## Using Clutch Components
+
+### Image Component
+
+Use the optimized Image component:
+
+```typescript
+import { Image } from '@clutch-creator/toolkit/components/Image';
+
+export default function Hero() {
+  return (
+    <div className="relative h-96">
+      <Image
+        src="https://example.com/hero.jpg"
+        alt="Hero image"
+        fill
+        priority
+        className="object-cover"
+      />
+    </div>
+  );
+}
+```
+
+### Link Component
+
+Use the enhanced Link component:
+
+```typescript
+import { Link } from '@clutch-creator/toolkit/components/Link';
+
+export default function Navigation() {
+  return (
+    <nav>
+      <Link href="/">Home</Link>
+      <Link href="/about">About</Link>
+      <Link href="/contact">Contact</Link>
+    </nav>
+  );
+}
+```
+
+### SEO Component
+
+Add SEO metadata to your pages:
+
+```typescript
+import { Seo } from '@clutch-creator/toolkit/components/Seo';
+
+export default function AboutPage() {
+  return (
+    <>
+      <Seo
+        title="About Us"
+        description="Learn more about our company"
+        openGraph={{
+          title: 'About Us',
+          description: 'Learn more about our company',
+          images: [
+            {
+              url: 'https://example.com/og-image.jpg',
+              width: 1200,
+              height: 630,
+              alt: 'About Us',
+            },
+          ],
+        }}
+      />
+      <main>
+        <h1>About Us</h1>
+        <p>We build amazing websites with Clutch.</p>
+      </main>
+    </>
+  );
+}
+```
+
+## State Management
+
+### Register State
+
+Make state available globally in Clutch:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterState } from '@clutch-creator/toolkit';
+
+export default function Counter() {
+  const [count, setCount] = useState(0);
+
+  // Register state to make it globally accessible
+  useRegisterState('count', count);
+
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>
+        Increment
+      </button>
+    </div>
+  );
+}
+```
+
+### Register Actions
+
+Create interactive components with registered actions:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterAction } from '@clutch-creator/toolkit';
+
+export default function ToggleButton() {
+  const [isActive, setIsActive] = useState(false);
+
+  useRegisterAction({
+    name: 'toggle',
+    action: () => setIsActive(!isActive),
+    props: {
+      'data-active': isActive,
+    },
+    styleSelectors: [
+      { name: 'Active', value: '&[data-active="true"]' },
+    ],
+  });
+
+  return (
+    <button
+      onClick={() => setIsActive(!isActive)}
+      className={isActive ? 'bg-blue-500' : 'bg-gray-300'}
+    >
+      {isActive ? 'Active' : 'Inactive'}
+    </button>
+  );
+}
+```
+
+## Building for Production
+
+### 1. Build Your Site
+
+```bash
+npm run build
+# or
+yarn build
+# or
+pnpm build
+# or
+bun run build
+```
+
+### 2. Test Production Build
+
+```bash
+npm run start
+# or
+yarn start
+# or
+pnpm start
+# or
+bun start
+```
+
+### 3. Deploy
+
+Deploy to Vercel (recommended):
+
+```bash
+# Install Vercel CLI
+npm i -g vercel
+
+# Deploy
+vercel
+```
+
+Or deploy to other platforms:
+- **Netlify**: Connect your Git repository
+- **Cloudflare Pages**: Push to Git and connect
+- **Custom Server**: Use the `output: 'standalone'` option
+
+## Next Steps
+
+Now that you have a basic Clutch site running, explore more:
+
+- **[Core Concepts](/docs/core-concepts)**: Understand Clutch fundamentals
+- **[Components](/docs/components)**: Learn about available components
+- **[State Management](/docs/state-management)**: Master state and actions
+- **[Data Fetching](/docs/queries)**: Connect to APIs and databases
+- **[Custom Components](/docs/custom-components)**: Build reusable components
+
+## Common Issues
+
+### Build Errors
+
+If you encounter build errors:
+
+1. Ensure you're using Node.js 18+
+2. Clear `.next` folder: `rm -rf .next`
+3. Reinstall dependencies: `rm -rf node_modules && npm install`
+
+### Image Optimization Issues
+
+If images aren't loading:
+
+1. Check your `remotePatterns` configuration in `next.config.js`
+2. Ensure image URLs are accessible
+3. Verify image formats are supported
+
+### TypeScript Errors
+
+For TypeScript issues:
+
+1. Install type definitions: `npm install -D @types/react @types/node`
+2. Check your `tsconfig.json` configuration
+3. Restart your IDE/editor
+
+## Getting Help
+
+If you need assistance:
+
+- **Discord**: [Join our community](https://discord.gg/j4bnupeese)
+- **GitHub Issues**: [Report bugs or request features](https://github.com/clutch-creator/toolkit/issues)
+- **Documentation**: [Browse the full docs](/docs)
+
+---
+
+**Next:** [Core Concepts](/docs/core-concepts) - Learn the fundamental concepts of Clutch
