@@ -1,0 +1,752 @@
+---
+title: "Helper Functions"
+description: "Create reusable utility functions for your Clutch applications"
+---
+
+# Helper Functions
+
+Helper functions are reusable utilities that encapsulate common logic, data transformations, and calculations. This guide covers how to create and organize helper functions in your Clutch applications.
+
+## Basic Helper Functions
+
+### Data Formatting
+
+Format data for display:
+
+```typescript
+// lib/helpers/format.ts
+
+export function formatPrice(price: number, currency: string = 'USD'): string {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+  }).format(price);
+}
+
+export function formatDate(date: string | Date, format: 'short' | 'long' = 'short'): string {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  
+  if (format === 'long') {
+    return dateObj.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+  
+  return dateObj.toLocaleDateString('en-US');
+}
+
+export function formatNumber(num: number, decimals: number = 0): string {
+  return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+// Usage
+formatPrice(1234.56); // "$1,234.56"
+formatDate('2024-01-15'); // "1/15/2024"
+formatDate('2024-01-15', 'long'); // "January 15, 2024"
+formatNumber(1234567.89, 2); // "1,234,567.89"
+```
+
+### String Manipulation
+
+Common string operations:
+
+```typescript
+// lib/helpers/string.ts
+
+export function truncate(str: string, maxLength: number, suffix: string = '...'): string {
+  if (str.length <= maxLength) return str;
+  return str.substring(0, maxLength - suffix.length) + suffix;
+}
+
+export function slugify(str: string): string {
+  return str
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+export function titleCase(str: string): string {
+  return str
+    .toLowerCase()
+    .split(' ')
+    .map(word => capitalize(word))
+    .join(' ');
+}
+
+// Usage
+truncate('This is a long text', 10); // "This is..."
+slugify('Hello World!'); // "hello-world"
+capitalize('hello'); // "Hello"
+titleCase('hello world'); // "Hello World"
+```
+
+### Array Utilities
+
+Array manipulation helpers:
+
+```typescript
+// lib/helpers/array.ts
+
+export function chunk<T>(array: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    chunks.push(array.slice(i, i + size));
+  }
+  return chunks;
+}
+
+export function unique<T>(array: T[]): T[] {
+  return Array.from(new Set(array));
+}
+
+export function groupBy<T>(array: T[], key: keyof T): Record<string, T[]> {
+  return array.reduce((acc, item) => {
+    const groupKey = String(item[key]);
+    if (!acc[groupKey]) {
+      acc[groupKey] = [];
+    }
+    acc[groupKey].push(item);
+    return acc;
+  }, {} as Record<string, T[]>);
+}
+
+export function sortBy<T>(array: T[], key: keyof T, order: 'asc' | 'desc' = 'asc'): T[] {
+  return [...array].sort((a, b) => {
+    const aVal = a[key];
+    const bVal = b[key];
+    
+    if (aVal < bVal) return order === 'asc' ? -1 : 1;
+    if (aVal > bVal) return order === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+
+// Usage
+chunk([1, 2, 3, 4, 5], 2); // [[1, 2], [3, 4], [5]]
+unique([1, 2, 2, 3, 3, 4]); // [1, 2, 3, 4]
+groupBy(products, 'category'); // { electronics: [...], books: [...] }
+sortBy(products, 'price', 'desc'); // Sorted by price descending
+```
+
+## Validation Functions
+
+### Form Validation
+
+Validate user input:
+
+```typescript
+// lib/helpers/validation.ts
+
+export function isEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+export function isPhone(phone: string): boolean {
+  const phoneRegex = /^\+?[\d\s-()]+$/;
+  return phoneRegex.test(phone);
+}
+
+export function isURL(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function isStrongPassword(password: string): boolean {
+  // At least 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special char
+  const strongRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+  return strongRegex.test(password);
+}
+
+export function validateRequired(value: string | number | null | undefined): boolean {
+  if (value === null || value === undefined) return false;
+  if (typeof value === 'string') return value.trim().length > 0;
+  return true;
+}
+
+export function validateLength(
+  value: string,
+  min?: number,
+  max?: number
+): { valid: boolean; message?: string } {
+  if (min && value.length < min) {
+    return { valid: false, message: `Minimum ${min} characters required` };
+  }
+  if (max && value.length > max) {
+    return { valid: false, message: `Maximum ${max} characters allowed` };
+  }
+  return { valid: true };
+}
+
+// Usage
+isEmail('user@example.com'); // true
+isStrongPassword('Abc123!@'); // true
+validateLength('hello', 3, 10); // { valid: true }
+```
+
+## Data Transformation
+
+### Object Manipulation
+
+Transform objects:
+
+```typescript
+// lib/helpers/object.ts
+
+export function pick<T extends object, K extends keyof T>(
+  obj: T,
+  keys: K[]
+): Pick<T, K> {
+  const result = {} as Pick<T, K>;
+  keys.forEach(key => {
+    if (key in obj) {
+      result[key] = obj[key];
+    }
+  });
+  return result;
+}
+
+export function omit<T extends object, K extends keyof T>(
+  obj: T,
+  keys: K[]
+): Omit<T, K> {
+  const result = { ...obj };
+  keys.forEach(key => {
+    delete result[key];
+  });
+  return result;
+}
+
+export function deepMerge<T extends object>(target: T, source: Partial<T>): T {
+  const output = { ...target };
+  
+  if (isObject(target) && isObject(source)) {
+    Object.keys(source).forEach(key => {
+      if (isObject(source[key])) {
+        if (!(key in target)) {
+          Object.assign(output, { [key]: source[key] });
+        } else {
+          output[key] = deepMerge(target[key], source[key]);
+        }
+      } else {
+        Object.assign(output, { [key]: source[key] });
+      }
+    });
+  }
+  
+  return output;
+}
+
+function isObject(item: any): boolean {
+  return item && typeof item === 'object' && !Array.isArray(item);
+}
+
+// Usage
+pick({ a: 1, b: 2, c: 3 }, ['a', 'c']); // { a: 1, c: 3 }
+omit({ a: 1, b: 2, c: 3 }, ['b']); // { a: 1, c: 3 }
+```
+
+### API Response Transformation
+
+Transform API responses:
+
+```typescript
+// lib/helpers/transform.ts
+
+type ApiProduct = {
+  id: string;
+  product_name: string;
+  product_price: number;
+  image_url: string;
+  created_at: string;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+  createdAt: Date;
+};
+
+export function transformProduct(apiProduct: ApiProduct): Product {
+  return {
+    id: apiProduct.id,
+    name: apiProduct.product_name,
+    price: apiProduct.product_price,
+    image: apiProduct.image_url,
+    createdAt: new Date(apiProduct.created_at),
+  };
+}
+
+export function transformProducts(apiProducts: ApiProduct[]): Product[] {
+  return apiProducts.map(transformProduct);
+}
+
+// Generic transformer
+export function transformResponse<TApi, TApp>(
+  data: TApi,
+  transformer: (item: TApi) => TApp
+): TApp;
+export function transformResponse<TApi, TApp>(
+  data: TApi[],
+  transformer: (item: TApi) => TApp
+): TApp[];
+export function transformResponse<TApi, TApp>(
+  data: TApi | TApi[],
+  transformer: (item: TApi) => TApp
+): TApp | TApp[] {
+  if (Array.isArray(data)) {
+    return data.map(transformer);
+  }
+  return transformer(data);
+}
+```
+
+## Async Utilities
+
+### Delay and Retry
+
+Handle async operations:
+
+```typescript
+// lib/helpers/async.ts
+
+export function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export async function retry<T>(
+  fn: () => Promise<T>,
+  options: {
+    retries?: number;
+    delay?: number;
+    onRetry?: (error: Error, attempt: number) => void;
+  } = {}
+): Promise<T> {
+  const { retries = 3, delay: delayMs = 1000, onRetry } = options;
+  
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error as Error;
+      
+      if (attempt < retries) {
+        if (onRetry) {
+          onRetry(lastError, attempt + 1);
+        }
+        await delay(delayMs);
+      }
+    }
+  }
+  
+  throw lastError!;
+}
+
+export async function timeout<T>(
+  promise: Promise<T>,
+  ms: number,
+  errorMessage: string = 'Operation timed out'
+): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(errorMessage)), ms)
+    ),
+  ]);
+}
+
+// Usage
+await delay(1000); // Wait 1 second
+
+await retry(
+  () => fetch('https://api.example.com/data'),
+  {
+    retries: 3,
+    delay: 2000,
+    onRetry: (error, attempt) => {
+      console.log(`Retry attempt ${attempt}: ${error.message}`);
+    },
+  }
+);
+
+await timeout(
+  fetch('https://api.example.com/slow'),
+  5000,
+  'Request took too long'
+);
+```
+
+## URL and Query Params
+
+### URL Manipulation
+
+Work with URLs:
+
+```typescript
+// lib/helpers/url.ts
+
+export function buildUrl(
+  base: string,
+  params: Record<string, string | number | boolean | undefined>
+): string {
+  const url = new URL(base);
+  
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) {
+      url.searchParams.set(key, String(value));
+    }
+  });
+  
+  return url.toString();
+}
+
+export function parseQueryString(
+  queryString: string
+): Record<string, string> {
+  const params = new URLSearchParams(queryString);
+  const result: Record<string, string> = {};
+  
+  params.forEach((value, key) => {
+    result[key] = value;
+  });
+  
+  return result;
+}
+
+export function addQueryParams(
+  url: string,
+  params: Record<string, string | number | boolean>
+): string {
+  const urlObj = new URL(url);
+  
+  Object.entries(params).forEach(([key, value]) => {
+    urlObj.searchParams.set(key, String(value));
+  });
+  
+  return urlObj.toString();
+}
+
+// Usage
+buildUrl('https://api.example.com/products', {
+  category: 'electronics',
+  sort: 'price',
+  page: 1,
+}); // "https://api.example.com/products?category=electronics&sort=price&page=1"
+
+parseQueryString('?category=books&page=2'); // { category: 'books', page: '2' }
+```
+
+## Storage Utilities
+
+### Local Storage
+
+Safely work with localStorage:
+
+```typescript
+// lib/helpers/storage.ts
+
+export function getStorageItem<T>(key: string, defaultValue: T): T {
+  if (typeof window === 'undefined') return defaultValue;
+  
+  try {
+    const item = window.localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+export function setStorageItem<T>(key: string, value: T): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch (error) {
+    console.error('Failed to save to localStorage:', error);
+  }
+}
+
+export function removeStorageItem(key: string): void {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    window.localStorage.removeItem(key);
+  } catch (error) {
+    console.error('Failed to remove from localStorage:', error);
+  }
+}
+
+// Usage
+const theme = getStorageItem('theme', 'light');
+setStorageItem('theme', 'dark');
+removeStorageItem('theme');
+```
+
+## Cookie Utilities
+
+### Cookie Management
+
+Work with cookies:
+
+```typescript
+// lib/helpers/cookie.ts
+
+export function getCookie(name: string): string | null {
+  if (typeof document === 'undefined') return null;
+  
+  const matches = document.cookie.match(
+    new RegExp(`(?:^|; )${name.replace(/([.$?*|{}()[\]\\\/+^])/g, '\\$1')}=([^;]*)`)
+  );
+  return matches ? decodeURIComponent(matches[1]) : null;
+}
+
+export function setCookie(
+  name: string,
+  value: string,
+  options: {
+    expires?: Date | number;
+    path?: string;
+    domain?: string;
+    secure?: boolean;
+    sameSite?: 'strict' | 'lax' | 'none';
+  } = {}
+): void {
+  if (typeof document === 'undefined') return;
+  
+  let cookieString = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`;
+  
+  if (options.expires) {
+    if (typeof options.expires === 'number') {
+      const date = new Date();
+      date.setTime(date.getTime() + options.expires * 24 * 60 * 60 * 1000);
+      cookieString += `; expires=${date.toUTCString()}`;
+    } else {
+      cookieString += `; expires=${options.expires.toUTCString()}`;
+    }
+  }
+  
+  if (options.path) cookieString += `; path=${options.path}`;
+  if (options.domain) cookieString += `; domain=${options.domain}`;
+  if (options.secure) cookieString += '; secure';
+  if (options.sameSite) cookieString += `; samesite=${options.sameSite}`;
+  
+  document.cookie = cookieString;
+}
+
+export function deleteCookie(name: string, path: string = '/'): void {
+  setCookie(name, '', { expires: new Date(0), path });
+}
+
+// Usage
+setCookie('userId', '123', { expires: 7 }); // Expires in 7 days
+const userId = getCookie('userId');
+deleteCookie('userId');
+```
+
+## Math and Calculations
+
+### Common Calculations
+
+```typescript
+// lib/helpers/math.ts
+
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+export function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+export function average(numbers: number[]): number {
+  if (numbers.length === 0) return 0;
+  return numbers.reduce((sum, num) => sum + num, 0) / numbers.length;
+}
+
+export function sum(numbers: number[]): number {
+  return numbers.reduce((sum, num) => sum + num, 0);
+}
+
+export function percentageChange(oldValue: number, newValue: number): number {
+  if (oldValue === 0) return 0;
+  return ((newValue - oldValue) / oldValue) * 100;
+}
+
+export function round(value: number, decimals: number = 2): number {
+  return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals);
+}
+
+// Usage
+clamp(150, 0, 100); // 100
+randomInt(1, 10); // Random number between 1 and 10
+average([1, 2, 3, 4, 5]); // 3
+percentageChange(100, 150); // 50
+round(1.2345, 2); // 1.23
+```
+
+## Organizing Helpers
+
+### File Structure
+
+Organize helpers by category:
+
+```
+lib/
+└── helpers/
+    ├── index.ts          # Export all helpers
+    ├── format.ts         # Formatting functions
+    ├── validation.ts     # Validation functions
+    ├── string.ts         # String utilities
+    ├── array.ts          # Array utilities
+    ├── object.ts         # Object utilities
+    ├── async.ts          # Async utilities
+    ├── url.ts            # URL utilities
+    ├── storage.ts        # Storage utilities
+    ├── cookie.ts         # Cookie utilities
+    └── math.ts           # Math utilities
+```
+
+### Index File
+
+Export all helpers:
+
+```typescript
+// lib/helpers/index.ts
+
+export * from './format';
+export * from './validation';
+export * from './string';
+export * from './array';
+export * from './object';
+export * from './async';
+export * from './url';
+export * from './storage';
+export * from './cookie';
+export * from './math';
+```
+
+### Usage
+
+Import and use helpers:
+
+```typescript
+import { 
+  formatPrice, 
+  slugify, 
+  unique, 
+  isEmail 
+} from '@/lib/helpers';
+
+// Use helpers in your components
+function ProductCard({ product }) {
+  const slug = slugify(product.name);
+  const price = formatPrice(product.price);
+  
+  return (
+    <div>
+      <h3>{product.name}</h3>
+      <p>{price}</p>
+      <a href={`/products/${slug}`}>View Details</a>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Pure Functions
+
+Write pure functions when possible:
+
+```typescript
+// ✅ Good: Pure function
+export function add(a: number, b: number): number {
+  return a + b;
+}
+
+// ❌ Bad: Side effects
+let total = 0;
+export function add(value: number): void {
+  total += value; // Mutates external state
+}
+```
+
+### 2. Type Safety
+
+Always use TypeScript:
+
+```typescript
+// ✅ Good: Type-safe
+export function formatPrice(price: number, currency: string = 'USD'): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(price);
+}
+
+// ❌ Bad: Untyped
+export function formatPrice(price, currency) {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(price);
+}
+```
+
+### 3. Documentation
+
+Document complex functions:
+
+```typescript
+/**
+ * Retries an async function with exponential backoff
+ * @param fn The async function to retry
+ * @param options Retry options
+ * @returns Promise that resolves with the function result
+ * @throws The last error if all retries fail
+ */
+export async function retry<T>(
+  fn: () => Promise<T>,
+  options: RetryOptions = {}
+): Promise<T> {
+  // Implementation
+}
+```
+
+### 4. Testing
+
+Test your helpers:
+
+```typescript
+import { slugify, formatPrice } from './helpers';
+
+describe('slugify', () => {
+  it('converts string to slug', () => {
+    expect(slugify('Hello World!')).toBe('hello-world');
+  });
+});
+
+describe('formatPrice', () => {
+  it('formats price with currency', () => {
+    expect(formatPrice(1234.56)).toBe('$1,234.56');
+  });
+});
+```
+
+---
+
+**Next Steps:**
+- [Custom Components](/docs/custom-components) - Use helpers in components
+- [Queries](/docs/queries) - Use helpers for data transformation
+- [Actions](/docs/actions) - Use helpers in event handlers
+- [Testing](/docs/testing) - Test your helper functions

@@ -1,0 +1,838 @@
+---
+title: "Creating Custom Components"
+description: "Learn how to build custom React components for Clutch"
+---
+
+# Creating Custom Components
+
+Custom components allow you to extend Clutch with your own reusable UI elements. This guide covers everything from basic components to advanced patterns.
+
+## Basic Custom Component
+
+### Simple Component
+
+Create a basic React component:
+
+```typescript
+// components/CustomButton.tsx
+type CustomButtonProps = {
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'outline';
+  size?: 'small' | 'medium' | 'large';
+  onClick?: () => void;
+};
+
+export function CustomButton({
+  children,
+  variant = 'primary',
+  size = 'medium',
+  onClick,
+}: CustomButtonProps) {
+  return (
+    <button
+      className={`btn btn-${variant} btn-${size}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+### Registering for Visual Editor
+
+Make your component available in Clutch's visual editor:
+
+```typescript
+import { clutchElementConfig } from '@clutch-creator/toolkit';
+
+export function CustomButton({ children, variant = 'primary' }: CustomButtonProps) {
+  return (
+    <button className={`btn btn-${variant}`}>
+      {children}
+    </button>
+  );
+}
+
+// Register component with visual editor
+clutchElementConfig(CustomButton, {
+  icon: '🔘', // Icon shown in editor
+  styleSelectors: [
+    { name: 'Default', value: '&' },
+    { name: 'Hover', value: '&:hover' },
+    { name: 'Active', value: '&:active' },
+    { name: 'Disabled', value: '&:disabled' },
+  ],
+});
+```
+
+## Component Props
+
+### Type-Safe Props
+
+Define props with TypeScript:
+
+```typescript
+import type { Controls } from '@clutch-creator/toolkit';
+
+type CardProps = {
+  // Standard props
+  title: string;
+  description: string;
+  
+  // Image control in visual editor
+  image: Controls['Media'];
+  
+  /**
+   * Card variant
+   * @control Select
+   */
+  variant: 'default' | 'elevated' | 'outlined';
+  
+  /**
+   * Show shadow
+   * @control Checkbox
+   */
+  showShadow: boolean;
+  
+  /**
+   * Custom CSS class
+   * @control Input
+   */
+  className?: string;
+  
+  children?: React.ReactNode;
+};
+
+export function Card({
+  title,
+  description,
+  image,
+  variant = 'default',
+  showShadow = true,
+  className = '',
+  children,
+}: CardProps) {
+  return (
+    <div className={`card card-${variant} ${showShadow ? 'shadow' : ''} ${className}`}>
+      {image && <img src={image.src} alt={image.alt} />}
+      <h3>{title}</h3>
+      <p>{description}</p>
+      {children}
+    </div>
+  );
+}
+```
+
+### Control Types
+
+Available control types for props:
+
+```typescript
+import type { Controls } from '@clutch-creator/toolkit';
+
+type ComponentProps = {
+  // Text inputs
+  text: Controls['Input'];
+  longText: Controls['TextArea'];
+  richContent: Controls['RichText'];
+  code: Controls['Code'];
+  
+  // Media
+  image: Controls['Media'];
+  icon: Controls['Svg'];
+  file: Controls['File'];
+  
+  // Selection
+  select: Controls['Select'];
+  combobox: Controls['Combobox'];
+  checkbox: Controls['Checkbox'];
+  
+  // Visual
+  color: Controls['Color'];
+  url: Controls['Url'];
+  
+  // Data
+  number: Controls['Number'];
+  json: Controls['Json'];
+  object: Controls['Object'];
+  array: Controls['Array'];
+  
+  // Advanced
+  component: Controls['Component'];
+  styles: Controls['Styles'];
+  action: Controls['Action'];
+};
+```
+
+### Default Values
+
+Provide sensible defaults:
+
+```typescript
+type ButtonProps = {
+  variant?: 'primary' | 'secondary';
+  size?: 'small' | 'medium' | 'large';
+  disabled?: boolean;
+  fullWidth?: boolean;
+};
+
+export function Button({
+  variant = 'primary',
+  size = 'medium',
+  disabled = false,
+  fullWidth = false,
+  children,
+}: ButtonProps & { children: React.ReactNode }) {
+  return (
+    <button
+      className={`btn btn-${variant} btn-${size} ${fullWidth ? 'w-full' : ''}`}
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+## Interactive Components
+
+### With State
+
+Create stateful components:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+
+type AccordionProps = {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+};
+
+export function Accordion({ 
+  title, 
+  children, 
+  defaultOpen = false 
+}: AccordionProps) {
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  
+  return (
+    <div className="accordion">
+      <button
+        className="accordion-header"
+        onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+      >
+        {title}
+        <span className={`icon ${isOpen ? 'rotate-180' : ''}`}>▼</span>
+      </button>
+      {isOpen && (
+        <div className="accordion-content">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+### With Registered Actions
+
+Register actions for visual editor:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterAction } from '@clutch-creator/toolkit';
+
+type ToggleCardProps = {
+  title: string;
+  children: React.ReactNode;
+};
+
+export function ToggleCard({ title, children }: ToggleCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  useRegisterAction({
+    name: 'toggle',
+    action: () => setIsExpanded(!isExpanded),
+    props: {
+      'data-expanded': isExpanded,
+    },
+    styleSelectors: [
+      { name: 'Collapsed', value: '&[data-expanded="false"]' },
+      { name: 'Expanded', value: '&[data-expanded="true"]' },
+    ],
+  });
+  
+  return (
+    <div className="toggle-card" data-expanded={isExpanded}>
+      <button onClick={() => setIsExpanded(!isExpanded)}>
+        {title}
+      </button>
+      {isExpanded && <div>{children}</div>}
+    </div>
+  );
+}
+```
+
+### With Global State
+
+Register state globally:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterState } from '@clutch-creator/toolkit';
+
+type TabsProps = {
+  tabs: Array<{ id: string; label: string; content: React.ReactNode }>;
+  defaultTab?: string;
+};
+
+export function Tabs({ tabs, defaultTab }: TabsProps) {
+  const [activeTab, setActiveTab] = useState(defaultTab || tabs[0]?.id);
+  
+  // Make active tab globally accessible
+  useRegisterState('activeTab', activeTab);
+  
+  return (
+    <div className="tabs">
+      <div className="tab-list">
+        {tabs.map(tab => (
+          <button
+            key={tab.id}
+            className={activeTab === tab.id ? 'active' : ''}
+            onClick={() => setActiveTab(tab.id)}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+      <div className="tab-content">
+        {tabs.find(tab => tab.id === activeTab)?.content}
+      </div>
+    </div>
+  );
+}
+```
+
+## Advanced Patterns
+
+### Compound Components
+
+Create compound component patterns:
+
+```typescript
+// Card.tsx
+type CardProps = {
+  children: React.ReactNode;
+  className?: string;
+};
+
+export function Card({ children, className = '' }: CardProps) {
+  return <div className={`card ${className}`}>{children}</div>;
+}
+
+export function CardHeader({ children }: { children: React.ReactNode }) {
+  return <div className="card-header">{children}</div>;
+}
+
+export function CardBody({ children }: { children: React.ReactNode }) {
+  return <div className="card-body">{children}</div>;
+}
+
+export function CardFooter({ children }: { children: React.ReactNode }) {
+  return <div className="card-footer">{children}</div>;
+}
+
+// Usage
+<Card>
+  <CardHeader>
+    <h3>Title</h3>
+  </CardHeader>
+  <CardBody>
+    <p>Content goes here</p>
+  </CardBody>
+  <CardFooter>
+    <button>Action</button>
+  </CardFooter>
+</Card>
+```
+
+### Render Props Pattern
+
+Use render props for flexibility:
+
+```typescript
+type ListProps<T> = {
+  items: T[];
+  renderItem: (item: T, index: number) => React.ReactNode;
+  renderEmpty?: () => React.ReactNode;
+  className?: string;
+};
+
+export function List<T>({ 
+  items, 
+  renderItem, 
+  renderEmpty,
+  className = '' 
+}: ListProps<T>) {
+  if (items.length === 0 && renderEmpty) {
+    return <div className={className}>{renderEmpty()}</div>;
+  }
+  
+  return (
+    <div className={`list ${className}`}>
+      {items.map((item, index) => (
+        <div key={index} className="list-item">
+          {renderItem(item, index)}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Usage
+<List
+  items={products}
+  renderItem={(product) => (
+    <div>
+      <h3>{product.name}</h3>
+      <p>${product.price}</p>
+    </div>
+  )}
+  renderEmpty={() => <p>No products found</p>}
+/>
+```
+
+### Context Pattern
+
+Share data with context:
+
+```typescript
+'use client';
+
+import { createContext, useContext, useState } from 'react';
+
+type TabsContextValue = {
+  activeTab: string;
+  setActiveTab: (id: string) => void;
+};
+
+const TabsContext = createContext<TabsContextValue | null>(null);
+
+export function Tabs({ 
+  children, 
+  defaultTab 
+}: { 
+  children: React.ReactNode;
+  defaultTab?: string;
+}) {
+  const [activeTab, setActiveTab] = useState(defaultTab || '');
+  
+  return (
+    <TabsContext.Provider value={{ activeTab, setActiveTab }}>
+      <div className="tabs">{children}</div>
+    </TabsContext.Provider>
+  );
+}
+
+export function TabList({ children }: { children: React.ReactNode }) {
+  return <div className="tab-list">{children}</div>;
+}
+
+export function Tab({ 
+  id, 
+  children 
+}: { 
+  id: string; 
+  children: React.ReactNode;
+}) {
+  const context = useContext(TabsContext);
+  if (!context) throw new Error('Tab must be used within Tabs');
+  
+  const { activeTab, setActiveTab } = context;
+  
+  return (
+    <button
+      className={activeTab === id ? 'active' : ''}
+      onClick={() => setActiveTab(id)}
+    >
+      {children}
+    </button>
+  );
+}
+
+export function TabPanel({ 
+  id, 
+  children 
+}: { 
+  id: string; 
+  children: React.ReactNode;
+}) {
+  const context = useContext(TabsContext);
+  if (!context) throw new Error('TabPanel must be used within Tabs');
+  
+  const { activeTab } = context;
+  
+  if (activeTab !== id) return null;
+  
+  return <div className="tab-panel">{children}</div>;
+}
+
+// Usage
+<Tabs defaultTab="tab1">
+  <TabList>
+    <Tab id="tab1">Tab 1</Tab>
+    <Tab id="tab2">Tab 2</Tab>
+  </TabList>
+  <TabPanel id="tab1">Content 1</TabPanel>
+  <TabPanel id="tab2">Content 2</TabPanel>
+</Tabs>
+```
+
+## Server Components
+
+### Async Server Components
+
+Fetch data in server components:
+
+```typescript
+// components/ProductList.tsx
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+};
+
+async function getProducts(): Promise<Product[]> {
+  const res = await fetch('https://api.example.com/products');
+  return res.json();
+}
+
+export async function ProductList() {
+  const products = await getProducts();
+  
+  return (
+    <div className="product-grid">
+      {products.map(product => (
+        <div key={product.id} className="product-card">
+          <h3>{product.name}</h3>
+          <p>${product.price}</p>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+### Mixing Server and Client
+
+Combine server and client components:
+
+```typescript
+// Server Component
+async function ProductPage({ params }: { params: { id: string } }) {
+  const product = await getProduct(params.id);
+  
+  return (
+    <div>
+      <h1>{product.name}</h1>
+      <p>{product.description}</p>
+      
+      {/* Client Component for interactivity */}
+      <AddToCartButton product={product} />
+    </div>
+  );
+}
+
+// Client Component
+'use client';
+
+function AddToCartButton({ product }) {
+  const [isAdding, setIsAdding] = useState(false);
+  
+  const handleAdd = async () => {
+    setIsAdding(true);
+    await addToCart(product);
+    setIsAdding(false);
+  };
+  
+  return (
+    <button onClick={handleAdd} disabled={isAdding}>
+      {isAdding ? 'Adding...' : 'Add to Cart'}
+    </button>
+  );
+}
+```
+
+## Styling Components
+
+### CSS Modules
+
+Use CSS Modules:
+
+```typescript
+// Button.module.css
+.button {
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  border: none;
+  cursor: pointer;
+}
+
+.primary {
+  background: #3b82f6;
+  color: white;
+}
+
+.secondary {
+  background: #6b7280;
+  color: white;
+}
+
+// Button.tsx
+import styles from './Button.module.css';
+
+export function Button({ variant = 'primary', children }) {
+  return (
+    <button className={`${styles.button} ${styles[variant]}`}>
+      {children}
+    </button>
+  );
+}
+```
+
+### Tailwind CSS
+
+Use Tailwind utility classes:
+
+```typescript
+export function Button({ 
+  variant = 'primary',
+  size = 'medium',
+  children 
+}: ButtonProps) {
+  const baseClasses = 'rounded font-medium transition-colors';
+  
+  const variantClasses = {
+    primary: 'bg-blue-500 hover:bg-blue-600 text-white',
+    secondary: 'bg-gray-500 hover:bg-gray-600 text-white',
+    outline: 'border-2 border-blue-500 text-blue-500 hover:bg-blue-50',
+  };
+  
+  const sizeClasses = {
+    small: 'px-3 py-1.5 text-sm',
+    medium: 'px-4 py-2 text-base',
+    large: 'px-6 py-3 text-lg',
+  };
+  
+  return (
+    <button 
+      className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]}`}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+### Dynamic Styles
+
+Apply styles based on props:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterAction } from '@clutch-creator/toolkit';
+
+export function InteractiveCard({ children }) {
+  const [isHovered, setIsHovered] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+  
+  useRegisterAction({
+    name: 'setHover',
+    action: setIsHovered,
+    props: {
+      'data-hovered': isHovered,
+      'data-active': isActive,
+    },
+    styleSelectors: [
+      { name: 'Default', value: '&' },
+      { name: 'Hovered', value: '&[data-hovered="true"]' },
+      { name: 'Active', value: '&[data-active="true"]' },
+    ],
+  });
+  
+  return (
+    <div
+      className="card"
+      data-hovered={isHovered}
+      data-active={isActive}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={() => setIsActive(!isActive)}
+    >
+      {children}
+    </div>
+  );
+}
+```
+
+## Testing Components
+
+### Unit Tests
+
+Test your components:
+
+```typescript
+// Button.test.tsx
+import { render, screen, fireEvent } from '@testing-library/react';
+import { Button } from './Button';
+
+describe('Button', () => {
+  it('renders children', () => {
+    render(<Button>Click me</Button>);
+    expect(screen.getByText('Click me')).toBeInTheDocument();
+  });
+  
+  it('calls onClick when clicked', () => {
+    const onClick = jest.fn();
+    render(<Button onClick={onClick}>Click me</Button>);
+    
+    fireEvent.click(screen.getByText('Click me'));
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+  
+  it('applies variant classes', () => {
+    const { rerender } = render(<Button variant="primary">Button</Button>);
+    expect(screen.getByText('Button')).toHaveClass('btn-primary');
+    
+    rerender(<Button variant="secondary">Button</Button>);
+    expect(screen.getByText('Button')).toHaveClass('btn-secondary');
+  });
+});
+```
+
+## Best Practices
+
+### 1. Single Responsibility
+
+Keep components focused:
+
+```typescript
+// ✅ Good: Focused component
+function ProductCard({ product }) {
+  return (
+    <div>
+      <ProductImage image={product.image} />
+      <ProductInfo name={product.name} price={product.price} />
+      <AddToCartButton productId={product.id} />
+    </div>
+  );
+}
+
+// ❌ Bad: Too much responsibility
+function ProductCard({ product, cart, user, ... }) {
+  // Handles display, cart logic, user auth, etc.
+}
+```
+
+### 2. Composition over Props
+
+Prefer composition:
+
+```typescript
+// ✅ Good: Composable
+<Card>
+  <CardHeader><h3>Title</h3></CardHeader>
+  <CardBody><p>Content</p></CardBody>
+</Card>
+
+// ❌ Less flexible
+<Card 
+  title="Title" 
+  content="Content" 
+  showHeader 
+  headerAlign="center"
+  ...manyOtherProps
+/>
+```
+
+### 3. TypeScript
+
+Always use TypeScript:
+
+```typescript
+// ✅ Good: Type-safe
+type ButtonProps = {
+  variant: 'primary' | 'secondary';
+  size: 'small' | 'medium' | 'large';
+  onClick?: () => void;
+  children: React.ReactNode;
+};
+
+// ❌ Bad: Untyped
+function Button({ variant, size, onClick, children }) {
+  // No type safety
+}
+```
+
+### 4. Accessibility
+
+Make components accessible:
+
+```typescript
+export function Modal({ isOpen, onClose, title, children }) {
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-title"
+      hidden={!isOpen}
+    >
+      <h2 id="modal-title">{title}</h2>
+      {children}
+      <button onClick={onClose} aria-label="Close modal">×</button>
+    </div>
+  );
+}
+```
+
+### 5. Performance
+
+Optimize components:
+
+```typescript
+'use client';
+
+import { memo } from 'react';
+
+// Memoize expensive components
+const ExpensiveComponent = memo(function ExpensiveComponent({ data }) {
+  // Complex rendering logic
+  return <div>{/* ... */}</div>;
+});
+
+// Use dynamic imports for code splitting
+import dynamic from 'next/dynamic';
+
+const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
+  loading: () => <p>Loading...</p>,
+});
+```
+
+---
+
+**Next Steps:**
+- [Component Library](/docs/component-library) - Explore built-in components
+- [Styling](/docs/styling) - Learn styling techniques
+- [State Management](/docs/state-management) - Manage component state
+- [Testing](/docs/testing) - Test your components

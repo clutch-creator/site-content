@@ -1,0 +1,748 @@
+---
+title: "State Management"
+description: "Learn how to manage state in Clutch applications"
+---
+
+# State Management
+
+Clutch provides powerful state management capabilities that work seamlessly with React hooks and the visual editor. Understanding how to manage state effectively is crucial for building interactive applications.
+
+## Types of State
+
+### Local State
+
+Component-specific state that doesn't need to be shared:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+      <button onClick={() => setCount(count - 1)}>Decrement</button>
+      <button onClick={() => setCount(0)}>Reset</button>
+    </div>
+  );
+}
+```
+
+**When to use:**
+- UI state (open/closed, active/inactive)
+- Form inputs
+- Component-specific interactions
+- State that doesn't need to be shared
+
+### Global State
+
+State shared across multiple components:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterState } from '@clutch-creator/toolkit';
+
+function ShoppingCart() {
+  const [items, setItems] = useState([]);
+  
+  // Register state globally
+  useRegisterState('cartItems', items);
+  
+  const addItem = (item) => {
+    setItems([...items, item]);
+  };
+  
+  const removeItem = (itemId) => {
+    setItems(items.filter(i => i.id !== itemId));
+  };
+  
+  return (
+    <div>
+      <h2>Cart ({items.length})</h2>
+      {items.map(item => (
+        <div key={item.id}>
+          {item.name} - ${item.price}
+          <button onClick={() => removeItem(item.id)}>Remove</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+**When to use:**
+- User authentication state
+- Shopping cart
+- App-wide settings
+- Data shared across pages
+- State needed by multiple components
+
+### URL State
+
+State stored in URL parameters:
+
+```typescript
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { updateUrlSearchParams } from '@clutch-creator/toolkit';
+
+function ProductFilter() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  const category = searchParams.get('category') || 'all';
+  const sortBy = searchParams.get('sort') || 'newest';
+  const page = parseInt(searchParams.get('page') || '1');
+  
+  const setCategory = (newCategory: string) => {
+    updateUrlSearchParams({ 
+      category: newCategory,
+      page: 1 // Reset to page 1 when filtering
+    }, router);
+  };
+  
+  const setSortBy = (sort: string) => {
+    updateUrlSearchParams({ sort }, router);
+  };
+  
+  const nextPage = () => {
+    updateUrlSearchParams({ page: page + 1 }, router);
+  };
+  
+  return (
+    <div>
+      <select value={category} onChange={(e) => setCategory(e.target.value)}>
+        <option value="all">All Categories</option>
+        <option value="electronics">Electronics</option>
+        <option value="books">Books</option>
+      </select>
+      
+      <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+        <option value="newest">Newest</option>
+        <option value="price-low">Price: Low to High</option>
+        <option value="price-high">Price: High to Low</option>
+      </select>
+      
+      <button onClick={nextPage}>Next Page</button>
+    </div>
+  );
+}
+```
+
+**When to use:**
+- Filters and search parameters
+- Pagination
+- Tab selection
+- Shareable state (users can share URLs)
+- Deep-linkable views
+
+### Persisted State
+
+State saved to localStorage or cookies:
+
+```typescript
+'use client';
+
+import { useState, useEffect } from 'react';
+
+function useLocalStorage<T>(key: string, initialValue: T) {
+  const [value, setValue] = useState<T>(() => {
+    if (typeof window === 'undefined') return initialValue;
+    
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : initialValue;
+  });
+  
+  useEffect(() => {
+    localStorage.setItem(key, JSON.stringify(value));
+  }, [key, value]);
+  
+  return [value, setValue] as const;
+}
+
+function ThemeToggle() {
+  const [theme, setTheme] = useLocalStorage('theme', 'light');
+  
+  const toggleTheme = () => {
+    setTheme(theme === 'light' ? 'dark' : 'light');
+  };
+  
+  return (
+    <button onClick={toggleTheme}>
+      Current theme: {theme}
+    </button>
+  );
+}
+```
+
+**When to use:**
+- User preferences
+- Theme settings
+- Recently viewed items
+- Draft content
+- Cache data
+
+## Registering State
+
+### useRegisterState
+
+Make state available to the visual editor:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterState } from '@clutch-creator/toolkit';
+
+function GlobalCounter() {
+  const [count, setCount] = useState(0);
+  
+  // Register state with name 'globalCount'
+  useRegisterState('globalCount', count);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}
+
+// Other components in the visual editor can now bind to 'globalCount'
+```
+
+**Type-Safe Registration:**
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterState } from '@clutch-creator/toolkit';
+
+type User = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+function UserProfile() {
+  const [user, setUser] = useState<User | null>(null);
+  
+  // Type-safe state registration
+  useRegisterState<User | null>('currentUser', user);
+  
+  return (
+    <div>
+      {user ? (
+        <div>
+          <h2>{user.name}</h2>
+          <p>{user.email}</p>
+        </div>
+      ) : (
+        <p>Not logged in</p>
+      )}
+    </div>
+  );
+}
+```
+
+### Multiple State Registrations
+
+Register multiple states in a single component:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterState } from '@clutch-creator/toolkit';
+
+function AppState() {
+  const [user, setUser] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [favorites, setFavorites] = useState([]);
+  
+  // Register multiple states
+  useRegisterState('user', user);
+  useRegisterState('cart', cart);
+  useRegisterState('favorites', favorites);
+  
+  return null; // This component just manages state
+}
+```
+
+## Registering Actions
+
+### useRegisterAction
+
+Create actions that can be triggered from the visual editor:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterAction } from '@clutch-creator/toolkit';
+
+function ToggleButton() {
+  const [isActive, setIsActive] = useState(false);
+  
+  useRegisterAction({
+    name: 'toggle',
+    action: () => setIsActive(!isActive),
+    props: {
+      'data-active': isActive,
+    },
+    styleSelectors: [
+      { name: 'Active', value: '&[data-active="true"]' },
+      { name: 'Inactive', value: '&[data-active="false"]' },
+    ],
+  });
+  
+  return (
+    <button onClick={() => setIsActive(!isActive)}>
+      {isActive ? 'Active' : 'Inactive'}
+    </button>
+  );
+}
+```
+
+### Action with Parameters
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterAction } from '@clutch-creator/toolkit';
+
+type SetValueAction = (value: number) => void;
+
+function Slider() {
+  const [value, setValue] = useState(50);
+  
+  useRegisterAction<SetValueAction>({
+    name: 'setValue',
+    action: (newValue: number) => {
+      setValue(newValue);
+    },
+    props: {
+      'data-value': value,
+    },
+    styleSelectors: [
+      { name: 'Low', value: '&[data-value<30]' },
+      { name: 'Medium', value: '&[data-value>=30][data-value<70]' },
+      { name: 'High', value: '&[data-value>=70]' },
+    ],
+  });
+  
+  return (
+    <input
+      type="range"
+      min="0"
+      max="100"
+      value={value}
+      onChange={(e) => setValue(parseInt(e.target.value))}
+    />
+  );
+}
+```
+
+### Wrapper Components
+
+Use wrapper components to apply styles:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterAction } from '@clutch-creator/toolkit';
+
+function Card({ children }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  useRegisterAction({
+    name: 'toggleExpand',
+    action: () => setIsExpanded(!isExpanded),
+    wrapper: ({ children, ...props }) => (
+      <div className="card-wrapper" {...props}>
+        {children}
+      </div>
+    ),
+    props: {
+      'data-expanded': isExpanded,
+    },
+    styleSelectors: [
+      { name: 'Collapsed', value: '&[data-expanded="false"]' },
+      { name: 'Expanded', value: '&[data-expanded="true"]' },
+    ],
+  });
+  
+  return (
+    <div className="card">
+      {isExpanded ? children : <div>Click to expand</div>}
+    </div>
+  );
+}
+```
+
+## State Patterns
+
+### Form State
+
+Manage form state effectively:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+
+type FormData = {
+  name: string;
+  email: string;
+  message: string;
+};
+
+type FormErrors = Partial<Record<keyof FormData, string>>;
+
+function ContactForm() {
+  const [formData, setFormData] = useState<FormData>({
+    name: '',
+    email: '',
+    message: '',
+  });
+  
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  const updateField = (field: keyof FormData, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when field is edited
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
+  };
+  
+  const validate = (): boolean => {
+    const newErrors: FormErrors = {};
+    
+    if (!formData.name) newErrors.name = 'Name is required';
+    if (!formData.email) newErrors.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Email is invalid';
+    }
+    if (!formData.message) newErrors.message = 'Message is required';
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validate()) return;
+    
+    setIsSubmitting(true);
+    try {
+      await submitForm(formData);
+      // Success - reset form
+      setFormData({ name: '', email: '', message: '' });
+    } catch (error) {
+      setErrors({ message: 'Failed to submit form' });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+  
+  return (
+    <form onSubmit={handleSubmit}>
+      <input
+        value={formData.name}
+        onChange={(e) => updateField('name', e.target.value)}
+        placeholder="Name"
+      />
+      {errors.name && <span className="error">{errors.name}</span>}
+      
+      <input
+        type="email"
+        value={formData.email}
+        onChange={(e) => updateField('email', e.target.value)}
+        placeholder="Email"
+      />
+      {errors.email && <span className="error">{errors.email}</span>}
+      
+      <textarea
+        value={formData.message}
+        onChange={(e) => updateField('message', e.target.value)}
+        placeholder="Message"
+      />
+      {errors.message && <span className="error">{errors.message}</span>}
+      
+      <button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? 'Sending...' : 'Send'}
+      </button>
+    </form>
+  );
+}
+```
+
+### Async State
+
+Handle asynchronous operations:
+
+```typescript
+'use client';
+
+import { useState, useEffect } from 'react';
+
+type AsyncState<T> = {
+  data: T | null;
+  loading: boolean;
+  error: Error | null;
+};
+
+function useAsync<T>(asyncFn: () => Promise<T>, deps: any[] = []) {
+  const [state, setState] = useState<AsyncState<T>>({
+    data: null,
+    loading: true,
+    error: null,
+  });
+  
+  useEffect(() => {
+    let cancelled = false;
+    
+    setState({ data: null, loading: true, error: null });
+    
+    asyncFn()
+      .then(data => {
+        if (!cancelled) {
+          setState({ data, loading: false, error: null });
+        }
+      })
+      .catch(error => {
+        if (!cancelled) {
+          setState({ data: null, loading: false, error });
+        }
+      });
+    
+    return () => {
+      cancelled = true;
+    };
+  }, deps);
+  
+  return state;
+}
+
+function UserProfile({ userId }: { userId: string }) {
+  const { data, loading, error } = useAsync(
+    () => fetchUser(userId),
+    [userId]
+  );
+  
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!data) return <div>No user found</div>;
+  
+  return (
+    <div>
+      <h2>{data.name}</h2>
+      <p>{data.email}</p>
+    </div>
+  );
+}
+```
+
+### Reducer Pattern
+
+Complex state logic with useReducer:
+
+```typescript
+'use client';
+
+import { useReducer } from 'react';
+
+type State = {
+  items: Array<{ id: string; name: string; quantity: number }>;
+  total: number;
+};
+
+type Action =
+  | { type: 'ADD_ITEM'; payload: { id: string; name: string } }
+  | { type: 'REMOVE_ITEM'; payload: { id: string } }
+  | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
+  | { type: 'CLEAR' };
+
+function cartReducer(state: State, action: Action): State {
+  switch (action.type) {
+    case 'ADD_ITEM': {
+      const existingItem = state.items.find(i => i.id === action.payload.id);
+      
+      if (existingItem) {
+        return {
+          ...state,
+          items: state.items.map(i =>
+            i.id === action.payload.id
+              ? { ...i, quantity: i.quantity + 1 }
+              : i
+          ),
+        };
+      }
+      
+      return {
+        ...state,
+        items: [...state.items, { ...action.payload, quantity: 1 }],
+      };
+    }
+    
+    case 'REMOVE_ITEM':
+      return {
+        ...state,
+        items: state.items.filter(i => i.id !== action.payload.id),
+      };
+    
+    case 'UPDATE_QUANTITY':
+      return {
+        ...state,
+        items: state.items.map(i =>
+          i.id === action.payload.id
+            ? { ...i, quantity: action.payload.quantity }
+            : i
+        ),
+      };
+    
+    case 'CLEAR':
+      return { items: [], total: 0 };
+    
+    default:
+      return state;
+  }
+}
+
+function ShoppingCart() {
+  const [state, dispatch] = useReducer(cartReducer, {
+    items: [],
+    total: 0,
+  });
+  
+  return (
+    <div>
+      <h2>Cart</h2>
+      {state.items.map(item => (
+        <div key={item.id}>
+          {item.name} x {item.quantity}
+          <button 
+            onClick={() => dispatch({ 
+              type: 'REMOVE_ITEM', 
+              payload: { id: item.id } 
+            })}
+          >
+            Remove
+          </button>
+        </div>
+      ))}
+      <button onClick={() => dispatch({ type: 'CLEAR' })}>
+        Clear Cart
+      </button>
+    </div>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Choose the Right State Type
+
+- **Local state** for component-specific UI
+- **Global state** for app-wide data
+- **URL state** for shareable/bookmarkable state
+- **Persisted state** for user preferences
+
+### 2. Keep State Minimal
+
+```typescript
+// ❌ Bad: Derived state
+const [items, setItems] = useState([]);
+const [itemCount, setItemCount] = useState(0); // Redundant!
+
+// ✅ Good: Calculate derived values
+const [items, setItems] = useState([]);
+const itemCount = items.length;
+```
+
+### 3. Lift State Up Appropriately
+
+Only lift state as high as necessary:
+
+```typescript
+// ✅ Good: State is only where it's needed
+function ParentComponent() {
+  return (
+    <>
+      <ComponentA /> {/* Has its own state */}
+      <ComponentB /> {/* Has its own state */}
+    </>
+  );
+}
+
+// Only lift state if components need to share it
+function ParentWithSharedState() {
+  const [sharedValue, setSharedValue] = useState('');
+  
+  return (
+    <>
+      <ComponentA value={sharedValue} onChange={setSharedValue} />
+      <ComponentB value={sharedValue} />
+    </>
+  );
+}
+```
+
+### 4. Use TypeScript
+
+Always type your state:
+
+```typescript
+// ✅ Good: Type-safe state
+type User = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+const [user, setUser] = useState<User | null>(null);
+
+// ❌ Bad: Untyped state
+const [user, setUser] = useState(null);
+```
+
+### 5. Batch Updates
+
+Update state efficiently:
+
+```typescript
+// ✅ Good: Functional update
+setCount(prev => prev + 1);
+
+// ✅ Good: Batch multiple updates
+setFormData(prev => ({
+  ...prev,
+  name: 'John',
+  email: 'john@example.com',
+}));
+
+// ❌ Bad: Multiple separate updates
+setName('John');
+setEmail('john@example.com'); // Causes extra re-renders
+```
+
+---
+
+**Next Steps:**
+- [Actions](/docs/actions) - Learn about event handling
+- [Queries](/docs/queries) - Fetch and manage data
+- [Custom Components](/docs/custom-components) - Build stateful components
+- [Advanced Patterns](/docs/advanced-patterns) - Complex state patterns

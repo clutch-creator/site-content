@@ -1,0 +1,678 @@
+---
+title: "API Reference"
+description: "Complete API reference for Clutch Toolkit"
+---
+
+# API Reference
+
+Complete reference for the Clutch Toolkit API, including hooks, components, utilities, and types.
+
+## State Management Hooks
+
+### useRegisterState
+
+Register a state value to be globally accessible in Clutch.
+
+**Signature:**
+
+```typescript
+function useRegisterState<T>(name: string, value: T): (newValue: T) => void
+```
+
+**Parameters:**
+- `name` (string): Unique identifier for the state
+- `value` (T): Current state value
+
+**Returns:** Function to update the state
+
+**Example:**
+
+```typescript
+import { useRegisterState } from '@clutch-creator/toolkit';
+
+const [count, setCount] = useState(0);
+useRegisterState('counter', count);
+```
+
+---
+
+### useRegisterAction
+
+Register an action that can be triggered from the visual editor.
+
+**Signature:**
+
+```typescript
+function useRegisterAction<T extends (...args: unknown[]) => unknown>(
+  options: RegisterActionOptions<T>
+): void
+
+interface RegisterActionOptions<T> {
+  name: string;
+  action: T;
+  props?: Record<string, unknown>;
+  wrapper?: React.FunctionComponent<{
+    children: React.ReactNode;
+    [key: string]: unknown;
+  }>;
+  styleSelectors?: StyleSelector[];
+}
+
+interface StyleSelector {
+  name: string;
+  value: string;
+}
+```
+
+**Parameters:**
+- `options.name` (string): Action identifier
+- `options.action` (function): Function to execute
+- `options.props` (object, optional): Props to apply to the element
+- `options.wrapper` (component, optional): Wrapper component
+- `options.styleSelectors` (array, optional): Style selectors for visual editor
+
+**Example:**
+
+```typescript
+import { useRegisterAction } from '@clutch-creator/toolkit';
+
+useRegisterAction({
+  name: 'toggle',
+  action: () => setIsOpen(!isOpen),
+  props: { 'data-open': isOpen },
+  styleSelectors: [
+    { name: 'Open', value: '&[data-open="true"]' },
+    { name: 'Closed', value: '&[data-open="false"]' },
+  ],
+});
+```
+
+---
+
+### useRegisterSelect
+
+Register a handler for when an element is selected in the visual editor.
+
+**Signature:**
+
+```typescript
+function useRegisterSelect(
+  setVisibility: (shouldBeVisible: boolean) => void,
+  activeTrail?: boolean
+): null
+```
+
+**Parameters:**
+- `setVisibility` (function): Callback to control visibility
+- `activeTrail` (boolean, optional): Whether to trigger when child is selected
+
+**Returns:** null
+
+**Example:**
+
+```typescript
+import { useRegisterSelect } from '@clutch-creator/toolkit';
+
+const [isVisible, setIsVisible] = useState(true);
+useRegisterSelect(setIsVisible, true);
+```
+
+## Utility Functions
+
+### updateUrlSearchParams
+
+Update URL search parameters while preserving existing ones.
+
+**Signature:**
+
+```typescript
+function updateUrlSearchParams(
+  newParams: Record<string, unknown>,
+  router: NextRouter
+): Record<string, unknown>
+```
+
+**Parameters:**
+- `newParams` (object): Parameters to add/update (null to remove)
+- `router` (NextRouter): Next.js router instance
+
+**Returns:** Updated parameters object
+
+**Example:**
+
+```typescript
+import { updateUrlSearchParams } from '@clutch-creator/toolkit';
+import { useRouter } from 'next/router';
+
+const router = useRouter();
+updateUrlSearchParams({ page: 2, sort: 'price' }, router);
+```
+
+---
+
+### clutchElementConfig
+
+Register a React component for use in the Clutch visual editor.
+
+**Signature:**
+
+```typescript
+function clutchElementConfig(
+  element: React.FunctionComponent,
+  config: {
+    icon?: string;
+    styleSelectors?: { name?: string; value: string }[];
+  }
+): void
+```
+
+**Parameters:**
+- `element` (component): React component to register
+- `config.icon` (string, optional): Emoji or icon for the component
+- `config.styleSelectors` (array, optional): Style selectors for visual editor
+
+**Example:**
+
+```typescript
+import { clutchElementConfig } from '@clutch-creator/toolkit';
+
+const Button = ({ children, variant }) => (
+  <button className={`btn-${variant}`}>{children}</button>
+);
+
+clutchElementConfig(Button, {
+  icon: '🔘',
+  styleSelectors: [
+    { name: 'Hover', value: '&:hover' },
+    { name: 'Disabled', value: '&:disabled' },
+  ],
+});
+```
+
+---
+
+### logger
+
+Conditional logging utility for development and debugging.
+
+**Signature:**
+
+```typescript
+const logger: {
+  log(...args: unknown[]): void;
+  debug(...args: unknown[]): void;
+  warn(...args: unknown[]): void;
+  error(...args: unknown[]): void;
+}
+```
+
+**Methods:**
+- `log`: Logs in development only
+- `debug`: Logs when `window.CLUTCH_DEBUG = true`
+- `warn`: Logs in development or server
+- `error`: Logs in development or server
+
+**Example:**
+
+```typescript
+import { logger } from '@clutch-creator/toolkit';
+
+logger.log('Development message');
+logger.debug('Debug information');
+logger.warn('Warning message');
+logger.error('Error occurred');
+```
+
+---
+
+### cloneChildren
+
+Clone React children with additional props.
+
+**Signature:**
+
+```typescript
+function cloneChildren(
+  children: React.ReactNode,
+  props: Record<string, unknown>
+): React.ReactNode
+```
+
+**Parameters:**
+- `children` (ReactNode): Children to clone
+- `props` (object): Props to add to each child
+
+**Returns:** Cloned children with props
+
+**Example:**
+
+```typescript
+import { cloneChildren } from '@clutch-creator/toolkit';
+
+const cloned = cloneChildren(children, {
+  className: 'child-class',
+  onClick: handleClick,
+});
+```
+
+## Components
+
+### Image
+
+Optimized image component with automatic optimization.
+
+**Props:**
+
+```typescript
+type ImageProps = {
+  src: string;
+  alt: string;
+  width?: number;
+  height?: number;
+  fill?: boolean;
+  priority?: boolean;
+  quality?: number;
+  className?: string;
+  sizes?: string;
+  placeholder?: 'blur' | 'empty';
+  blurDataURL?: string;
+}
+```
+
+**Example:**
+
+```typescript
+import { Image } from '@clutch-creator/toolkit/components/Image';
+
+<Image
+  src="/hero.jpg"
+  alt="Hero"
+  width={1200}
+  height={600}
+  priority
+/>
+```
+
+---
+
+### ClientImage
+
+Client-side image component for dynamic images.
+
+**Props:**
+
+```typescript
+type ClientImageProps = {
+  src: string;
+  alt: string;
+  width: number;
+  height: number;
+  className?: string;
+}
+```
+
+---
+
+### Link
+
+Enhanced Next.js Link component.
+
+**Props:**
+
+```typescript
+type LinkProps = {
+  href: string;
+  children: React.ReactNode;
+  external?: boolean;
+  params?: Record<string, string | number | boolean>;
+  className?: string;
+}
+```
+
+**Example:**
+
+```typescript
+import { Link } from '@clutch-creator/toolkit/components/Link';
+
+<Link href="/products" params={{ category: 'books' }}>
+  View Products
+</Link>
+```
+
+---
+
+### Seo
+
+SEO meta tags component.
+
+**Props:**
+
+```typescript
+type SeoProps = {
+  title: string;
+  description?: string;
+  keywords?: string[];
+  openGraph?: {
+    title?: string;
+    description?: string;
+    type?: string;
+    url?: string;
+    images?: Array<{
+      url: string;
+      width?: number;
+      height?: number;
+      alt?: string;
+    }>;
+  };
+  twitter?: {
+    card?: 'summary' | 'summary_large_image';
+    site?: string;
+    creator?: string;
+  };
+}
+```
+
+**Example:**
+
+```typescript
+import { Seo } from '@clutch-creator/toolkit/components/Seo';
+
+<Seo
+  title="Page Title"
+  description="Page description"
+  openGraph={{
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630 }],
+  }}
+/>
+```
+
+---
+
+### RichText
+
+Render rich text content.
+
+**Props:**
+
+```typescript
+type RichTextProps = {
+  content?: string;
+  children?: React.ReactNode;
+  className?: string;
+}
+```
+
+**Example:**
+
+```typescript
+import { RichText } from '@clutch-creator/toolkit/components/RichText';
+
+<RichText content={htmlContent} />
+
+// Or with JSX
+<RichText>
+  <p>Content with <strong>formatting</strong></p>
+</RichText>
+```
+
+---
+
+### Svg
+
+SVG component for vector graphics.
+
+**Props:**
+
+```typescript
+type SvgProps = {
+  src: string;
+  width?: number;
+  height?: number;
+  className?: string;
+}
+```
+
+---
+
+### Slot
+
+Pass props to children components.
+
+**Props:**
+
+```typescript
+type SlotProps = {
+  children: React.ReactNode;
+  [key: string]: unknown;
+}
+```
+
+**Example:**
+
+```typescript
+import { Slot } from '@clutch-creator/toolkit/components/Slot';
+
+<Slot className="extra-class" data-id="123">
+  <Button>Click Me</Button>
+</Slot>
+```
+
+---
+
+### ApplyHooks
+
+Apply multiple hooks to children.
+
+**Props:**
+
+```typescript
+type ApplyHooksProps = {
+  hooks: Array<() => void>;
+  children: React.ReactNode;
+}
+```
+
+---
+
+### NotFoundRedirect
+
+Handle 404 redirects.
+
+**Props:**
+
+```typescript
+type NotFoundRedirectProps = {
+  condition: boolean;
+  redirectTo?: string;
+}
+```
+
+## Error Classes
+
+### MissingEnvVariableError
+
+Thrown when required environment variables are missing.
+
+**Constructor:**
+
+```typescript
+new MissingEnvVariableError(envName: string)
+```
+
+**Example:**
+
+```typescript
+import { MissingEnvVariableError } from '@clutch-creator/toolkit';
+
+if (!process.env.API_KEY) {
+  throw new MissingEnvVariableError('API_KEY');
+}
+```
+
+---
+
+### InvalidEnvVariableError
+
+Thrown when environment variables have invalid values.
+
+**Constructor:**
+
+```typescript
+new InvalidEnvVariableError(envName: string)
+```
+
+**Example:**
+
+```typescript
+import { InvalidEnvVariableError } from '@clutch-creator/toolkit';
+
+if (isNaN(parseInt(process.env.PORT))) {
+  throw new InvalidEnvVariableError('PORT');
+}
+```
+
+## TypeScript Types
+
+### Controls
+
+Type definitions for component controls in the visual editor.
+
+```typescript
+import type { Controls } from '@clutch-creator/toolkit';
+
+type Props = {
+  text: Controls['Input'];
+  image: Controls['Media'];
+  select: Controls['Select'];
+  checkbox: Controls['Checkbox'];
+  number: Controls['Number'];
+  color: Controls['Color'];
+  richText: Controls['RichText'];
+  code: Controls['Code'];
+  json: Controls['Json'];
+  array: Controls['Array'];
+  object: Controls['Object'];
+  url: Controls['Url'];
+  file: Controls['File'];
+  svg: Controls['Svg'];
+  component: Controls['Component'];
+  styles: Controls['Styles'];
+  action: Controls['Action'];
+  combobox: Controls['Combobox'];
+  textArea: Controls['TextArea'];
+}
+```
+
+### Available Control Types
+
+- **Array**: Array control
+- **Checkbox**: Boolean checkbox
+- **Code**: Code editor
+- **Color**: Color picker
+- **Combobox**: Searchable dropdown
+- **Component**: Component selector
+- **File**: File upload
+- **Input**: Text input
+- **Json**: JSON editor
+- **Media**: Image/video selector
+- **Number**: Number input
+- **Object**: Object editor
+- **RichText**: Rich text editor
+- **Select**: Dropdown select
+- **Styles**: Style editor
+- **Svg**: SVG selector
+- **TextArea**: Multi-line text
+- **Url**: URL input
+- **Action**: Action selector
+
+## Constants
+
+### Environment Variables
+
+Common environment variables used by Clutch:
+
+```typescript
+// Site configuration
+NEXT_PUBLIC_SITE_URL: string
+
+// WordPress integration
+WORDPRESS_API_URL: string
+
+// API configuration
+NEXT_PUBLIC_API_URL: string
+API_KEY: string
+
+// Database
+DATABASE_URL: string
+
+// Analytics
+NEXT_PUBLIC_GA_ID: string
+```
+
+## Package Exports
+
+### Main Exports
+
+```typescript
+// Main package
+import { 
+  useRegisterState,
+  useRegisterAction,
+  useRegisterSelect,
+  updateUrlSearchParams,
+  clutchElementConfig,
+  logger,
+  cloneChildren,
+  MissingEnvVariableError,
+  InvalidEnvVariableError,
+} from '@clutch-creator/toolkit';
+
+// Type imports
+import type { Controls } from '@clutch-creator/toolkit';
+```
+
+### Component Exports
+
+```typescript
+// Individual component imports
+import { Image } from '@clutch-creator/toolkit/components/Image';
+import { ClientImage } from '@clutch-creator/toolkit/components/ClientImage';
+import { Link } from '@clutch-creator/toolkit/components/Link';
+import { Seo } from '@clutch-creator/toolkit/components/Seo';
+import { RichText } from '@clutch-creator/toolkit/components/RichText';
+import { Svg } from '@clutch-creator/toolkit/components/Svg';
+import { ApplyHooks } from '@clutch-creator/toolkit/components/ApplyHooks';
+import { NotFoundRedirect } from '@clutch-creator/toolkit/components/NotFoundRedirect';
+import { Slot } from '@clutch-creator/toolkit/components/Slot';
+```
+
+## Version Information
+
+Current version: See [package.json](https://github.com/clutch-creator/toolkit/blob/main/package.json)
+
+**Compatibility:**
+- Next.js: 15.3.3+
+- React: 19.0.0+
+- TypeScript: 5.0+
+- Node.js: 18.0+
+
+## Migration Guides
+
+### From Earlier Versions
+
+When updating, check the [CHANGELOG](https://github.com/clutch-creator/toolkit/blob/main/CHANGELOG.md) for breaking changes and migration steps.
+
+## Support
+
+- **Documentation**: [Full Documentation](/docs)
+- **GitHub**: [clutch-creator/toolkit](https://github.com/clutch-creator/toolkit)
+- **Discord**: [Join Community](https://discord.gg/j4bnupeese)
+- **Website**: [clutch.io](https://clutch.io)
+
+---
+
+**Related Documentation:**
+- [Getting Started](/docs/getting-started)
+- [Core Concepts](/docs/core-concepts)
+- [Components](/docs/components)
+- [State Management](/docs/state-management)

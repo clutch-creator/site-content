@@ -1,0 +1,806 @@
+---
+title: "Queries & Data Fetching"
+description: "Learn how to fetch and manage data in Clutch applications"
+---
+
+# Queries & Data Fetching
+
+Clutch provides powerful data fetching capabilities that integrate seamlessly with Next.js and React Server Components. Learn how to query data from APIs, databases, and services.
+
+## Server-Side Data Fetching
+
+### Fetch in Server Components
+
+Server Components can fetch data directly:
+
+```typescript
+// app/products/page.tsx
+async function ProductsPage() {
+  // This runs on the server at build time
+  const products = await fetch('https://api.example.com/products')
+    .then(res => res.json());
+  
+  return (
+    <div>
+      <h1>Products</h1>
+      <div className="grid">
+        {products.map(product => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export default ProductsPage;
+```
+
+### Caching Strategies
+
+Control how data is cached:
+
+```typescript
+// No caching - always fresh data
+async function getLiveData() {
+  const res = await fetch('https://api.example.com/live', {
+    cache: 'no-store',
+  });
+  return res.json();
+}
+
+// Cache with revalidation (ISR)
+async function getProducts() {
+  const res = await fetch('https://api.example.com/products', {
+    next: { revalidate: 3600 }, // Revalidate every hour
+  });
+  return res.json();
+}
+
+// Cache indefinitely
+async function getStaticData() {
+  const res = await fetch('https://api.example.com/static', {
+    cache: 'force-cache',
+  });
+  return res.json();
+}
+```
+
+### Dynamic Parameters
+
+Fetch data based on URL parameters:
+
+```typescript
+// app/products/[id]/page.tsx
+async function ProductPage({ params }: { params: { id: string } }) {
+  const product = await fetch(`https://api.example.com/products/${params.id}`)
+    .then(res => res.json());
+  
+  return (
+    <div>
+      <h1>{product.name}</h1>
+      <p>{product.description}</p>
+      <p>${product.price}</p>
+    </div>
+  );
+}
+
+// Generate static paths at build time
+export async function generateStaticParams() {
+  const products = await fetch('https://api.example.com/products')
+    .then(res => res.json());
+  
+  return products.map(product => ({
+    id: product.id.toString(),
+  }));
+}
+
+export default ProductPage;
+```
+
+## Client-Side Data Fetching
+
+### Using useEffect
+
+Fetch data in Client Components:
+
+```typescript
+'use client';
+
+import { useState, useEffect } from 'react';
+
+function UserProfile({ userId }: { userId: string }) {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    let cancelled = false;
+    
+    fetch(`https://api.example.com/users/${userId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (!cancelled) {
+          setUser(data);
+          setLoading(false);
+        }
+      })
+      .catch(err => {
+        if (!cancelled) {
+          setError(err);
+          setLoading(false);
+        }
+      });
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+  
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  if (!user) return <div>User not found</div>;
+  
+  return (
+    <div>
+      <h2>{user.name}</h2>
+      <p>{user.email}</p>
+    </div>
+  );
+}
+```
+
+### Custom Fetch Hook
+
+Create a reusable fetch hook:
+
+```typescript
+'use client';
+
+import { useState, useEffect } from 'react';
+
+type FetchState<T> = {
+  data: T | null;
+  loading: boolean;
+  error: Error | null;
+};
+
+function useFetch<T>(url: string): FetchState<T> {
+  const [state, setState] = useState<FetchState<T>>({
+    data: null,
+    loading: true,
+    error: null,
+  });
+  
+  useEffect(() => {
+    let cancelled = false;
+    
+    setState({ data: null, loading: true, error: null });
+    
+    fetch(url)
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
+      .then(data => {
+        if (!cancelled) {
+          setState({ data, loading: false, error: null });
+        }
+      })
+      .catch(error => {
+        if (!cancelled) {
+          setState({ data: null, loading: false, error });
+        }
+      });
+    
+    return () => {
+      cancelled = true;
+    };
+  }, [url]);
+  
+  return state;
+}
+
+// Usage
+function ProductList() {
+  const { data, loading, error } = useFetch<Product[]>(
+    'https://api.example.com/products'
+  );
+  
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error.message}</div>;
+  
+  return (
+    <div>
+      {data?.map(product => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  );
+}
+```
+
+## WordPress Integration
+
+### WordPress REST API
+
+Fetch WordPress content:
+
+```typescript
+const WORDPRESS_API = process.env.WORDPRESS_API_URL || 'https://your-site.com/wp-json';
+
+// Fetch posts
+async function getPosts() {
+  const res = await fetch(`${WORDPRESS_API}/wp/v2/posts?_embed`);
+  return res.json();
+}
+
+// Fetch single post by slug
+async function getPostBySlug(slug: string) {
+  const res = await fetch(`${WORDPRESS_API}/wp/v2/posts?slug=${slug}&_embed`);
+  const posts = await res.json();
+  return posts[0] || null;
+}
+
+// Fetch pages
+async function getPages() {
+  const res = await fetch(`${WORDPRESS_API}/wp/v2/pages`);
+  return res.json();
+}
+
+// Fetch custom post type
+async function getCustomPosts(postType: string) {
+  const res = await fetch(`${WORDPRESS_API}/wp/v2/${postType}`);
+  return res.json();
+}
+
+// Usage
+async function BlogPage() {
+  const posts = await getPosts();
+  
+  return (
+    <div>
+      <h1>Blog</h1>
+      {posts.map(post => (
+        <article key={post.id}>
+          <h2>{post.title.rendered}</h2>
+          <div dangerouslySetInnerHTML={{ __html: post.excerpt.rendered }} />
+        </article>
+      ))}
+    </div>
+  );
+}
+```
+
+### WordPress with TypeScript
+
+Type your WordPress data:
+
+```typescript
+type WordPressPost = {
+  id: number;
+  slug: string;
+  title: {
+    rendered: string;
+  };
+  content: {
+    rendered: string;
+  };
+  excerpt: {
+    rendered: string;
+  };
+  date: string;
+  author: number;
+  featured_media: number;
+  _embedded?: {
+    author: Array<{
+      name: string;
+      avatar_urls: { [key: string]: string };
+    }>;
+    'wp:featuredmedia'?: Array<{
+      source_url: string;
+      alt_text: string;
+    }>;
+  };
+};
+
+async function getPosts(): Promise<WordPressPost[]> {
+  const res = await fetch(`${WORDPRESS_API}/wp/v2/posts?_embed`);
+  return res.json();
+}
+
+function BlogPost({ post }: { post: WordPressPost }) {
+  const author = post._embedded?.author[0];
+  const featuredImage = post._embedded?.['wp:featuredmedia']?.[0];
+  
+  return (
+    <article>
+      {featuredImage && (
+        <img src={featuredImage.source_url} alt={featuredImage.alt_text} />
+      )}
+      <h1>{post.title.rendered}</h1>
+      {author && <p>By {author.name}</p>}
+      <div dangerouslySetInnerHTML={{ __html: post.content.rendered }} />
+    </article>
+  );
+}
+```
+
+## GraphQL Queries
+
+### Basic GraphQL
+
+Query GraphQL APIs:
+
+```typescript
+async function queryGraphQL<T>(query: string, variables?: any): Promise<T> {
+  const res = await fetch('https://api.example.com/graphql', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  
+  const { data, errors } = await res.json();
+  
+  if (errors) {
+    throw new Error(errors[0].message);
+  }
+  
+  return data;
+}
+
+// Usage
+const GET_PRODUCTS = `
+  query GetProducts($category: String) {
+    products(category: $category) {
+      id
+      name
+      price
+      image
+    }
+  }
+`;
+
+async function ProductsPage() {
+  const data = await queryGraphQL(GET_PRODUCTS, { category: 'electronics' });
+  
+  return (
+    <div>
+      {data.products.map(product => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  );
+}
+```
+
+## Database Queries
+
+### Serverless Functions
+
+Query databases via serverless functions:
+
+```typescript
+// app/api/products/route.ts
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db'; // Your database client
+
+export async function GET(request: Request) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const category = searchParams.get('category');
+    
+    const products = await db.products.findMany({
+      where: category ? { category } : {},
+      orderBy: { createdAt: 'desc' },
+    });
+    
+    return NextResponse.json(products);
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to fetch products' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body = await request.json();
+    
+    const product = await db.products.create({
+      data: body,
+    });
+    
+    return NextResponse.json(product);
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Failed to create product' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### Using API Routes
+
+Fetch from your API routes:
+
+```typescript
+// Server Component
+async function ProductsPage() {
+  const products = await fetch('http://localhost:3000/api/products')
+    .then(res => res.json());
+  
+  return (
+    <div>
+      {products.map(product => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  );
+}
+
+// Client Component
+'use client';
+
+function CreateProduct() {
+  const handleSubmit = async (data) => {
+    const res = await fetch('/api/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    
+    if (res.ok) {
+      const product = await res.json();
+      console.log('Created:', product);
+    }
+  };
+  
+  return <ProductForm onSubmit={handleSubmit} />;
+}
+```
+
+## Data Transformation
+
+### Mapping Data
+
+Transform API responses:
+
+```typescript
+type ApiProduct = {
+  id: string;
+  product_name: string;
+  product_price: number;
+  image_url: string;
+};
+
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+};
+
+async function getProducts(): Promise<Product[]> {
+  const apiProducts = await fetch('https://api.example.com/products')
+    .then(res => res.json());
+  
+  // Transform to match our app's data structure
+  return apiProducts.map((p: ApiProduct) => ({
+    id: p.id,
+    name: p.product_name,
+    price: p.product_price,
+    image: p.image_url,
+  }));
+}
+```
+
+### Filtering and Sorting
+
+```typescript
+async function getFilteredProducts(category: string, sortBy: string) {
+  const products = await fetch('https://api.example.com/products')
+    .then(res => res.json());
+  
+  // Filter by category
+  let filtered = products.filter(p => p.category === category);
+  
+  // Sort
+  if (sortBy === 'price-low') {
+    filtered.sort((a, b) => a.price - b.price);
+  } else if (sortBy === 'price-high') {
+    filtered.sort((a, b) => b.price - a.price);
+  } else if (sortBy === 'name') {
+    filtered.sort((a, b) => a.name.localeCompare(b.name));
+  }
+  
+  return filtered;
+}
+```
+
+### Pagination
+
+Implement pagination:
+
+```typescript
+type PaginatedResult<T> = {
+  items: T[];
+  page: number;
+  totalPages: number;
+  totalItems: number;
+};
+
+async function getPaginatedProducts(
+  page: number = 1,
+  perPage: number = 10
+): Promise<PaginatedResult<Product>> {
+  const offset = (page - 1) * perPage;
+  
+  const res = await fetch(
+    `https://api.example.com/products?offset=${offset}&limit=${perPage}`
+  );
+  
+  const data = await res.json();
+  
+  return {
+    items: data.products,
+    page,
+    totalPages: Math.ceil(data.total / perPage),
+    totalItems: data.total,
+  };
+}
+
+// Usage
+async function ProductsPage({ 
+  searchParams 
+}: { 
+  searchParams: { page?: string } 
+}) {
+  const page = parseInt(searchParams.page || '1');
+  const result = await getPaginatedProducts(page);
+  
+  return (
+    <div>
+      <ProductGrid products={result.items} />
+      <Pagination
+        currentPage={result.page}
+        totalPages={result.totalPages}
+      />
+    </div>
+  );
+}
+```
+
+## Error Handling
+
+### Try-Catch Pattern
+
+Handle errors gracefully:
+
+```typescript
+async function getProducts() {
+  try {
+    const res = await fetch('https://api.example.com/products');
+    
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+    
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch products:', error);
+    return []; // Return empty array as fallback
+  }
+}
+```
+
+### Error Boundaries
+
+Use React Error Boundaries:
+
+```typescript
+// app/products/error.tsx
+'use client';
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error;
+  reset: () => void;
+}) {
+  return (
+    <div className="error-container">
+      <h2>Something went wrong!</h2>
+      <p>{error.message}</p>
+      <button onClick={() => reset()}>Try again</button>
+    </div>
+  );
+}
+```
+
+### Loading States
+
+Show loading indicators:
+
+```typescript
+// app/products/loading.tsx
+export default function Loading() {
+  return (
+    <div className="loading-container">
+      <div className="spinner" />
+      <p>Loading products...</p>
+    </div>
+  );
+}
+```
+
+## Query Utilities
+
+### Reusable Query Functions
+
+Create a query utility:
+
+```typescript
+// lib/queries.ts
+const API_BASE = process.env.NEXT_PUBLIC_API_URL;
+
+export async function query<T>(
+  endpoint: string,
+  options?: RequestInit
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options?.headers,
+    },
+  });
+  
+  if (!res.ok) {
+    throw new Error(`Query failed: ${res.statusText}`);
+  }
+  
+  return res.json();
+}
+
+// Usage
+import { query } from '@/lib/queries';
+
+async function getProducts() {
+  return query<Product[]>('/products');
+}
+
+async function getProduct(id: string) {
+  return query<Product>(`/products/${id}`);
+}
+```
+
+### Authentication
+
+Add authentication to queries:
+
+```typescript
+async function authenticatedQuery<T>(
+  endpoint: string,
+  token: string
+): Promise<T> {
+  const res = await fetch(`${API_BASE}${endpoint}`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+  
+  if (res.status === 401) {
+    throw new Error('Unauthorized');
+  }
+  
+  if (!res.ok) {
+    throw new Error('Query failed');
+  }
+  
+  return res.json();
+}
+```
+
+## Best Practices
+
+### 1. Use Server Components
+
+Fetch data in Server Components when possible:
+
+```typescript
+// ✅ Good: Server Component
+async function ProductsPage() {
+  const products = await getProducts();
+  return <ProductList products={products} />;
+}
+
+// ❌ Avoid: Client Component with useEffect
+'use client';
+function ProductsPage() {
+  const [products, setProducts] = useState([]);
+  useEffect(() => {
+    fetch('/api/products').then(r => r.json()).then(setProducts);
+  }, []);
+  return <ProductList products={products} />;
+}
+```
+
+### 2. Cache Appropriately
+
+Choose the right caching strategy:
+
+```typescript
+// Static data - cache indefinitely
+const staticData = await fetch(url, { cache: 'force-cache' });
+
+// Dynamic data - no cache
+const liveData = await fetch(url, { cache: 'no-store' });
+
+// Incremental Static Regeneration
+const isrData = await fetch(url, { next: { revalidate: 3600 } });
+```
+
+### 3. Type Your Data
+
+Always use TypeScript:
+
+```typescript
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+};
+
+async function getProducts(): Promise<Product[]> {
+  return fetch('/api/products').then(res => res.json());
+}
+```
+
+### 4. Handle Errors
+
+Always handle errors:
+
+```typescript
+async function getProducts() {
+  try {
+    const res = await fetch('/api/products');
+    if (!res.ok) throw new Error('Failed to fetch');
+    return res.json();
+  } catch (error) {
+    console.error(error);
+    return []; // Fallback
+  }
+}
+```
+
+### 5. Loading States
+
+Provide feedback:
+
+```typescript
+// Use loading.tsx for automatic loading states
+// Or handle manually in Client Components
+
+'use client';
+function ProductList() {
+  const { data, loading } = useFetch('/api/products');
+  
+  if (loading) return <Spinner />;
+  return <List items={data} />;
+}
+```
+
+---
+
+**Next Steps:**
+- [Actions](/docs/actions) - Handle user interactions
+- [WordPress Integration](/docs/wordpress) - Deep dive into WordPress
+- [API Routes](/docs/api-routes) - Build your own APIs
+- [Advanced Queries](/docs/advanced-queries) - Complex query patterns
