@@ -1,6 +1,6 @@
 ---
 title: "Core Concepts"
-description: "Understand the fundamental concepts of Clutch Creator"
+description: "Understand the fundamental concepts of Clutch"
 ---
 
 # Core Concepts
@@ -9,32 +9,34 @@ Understanding these core concepts will help you build better Clutch applications
 
 ## Architecture
 
-### Static Site Generation (SSG)
+### Next.js Foundation
 
-Clutch builds static HTML files at build time, which are then served directly from a CDN:
+Clutch is built on Next.js, providing fully dynamic, high-performance web experiences:
 
 ```typescript
-// Pages are pre-rendered at build time
+// Pages can fetch data at build time, request time, or both
 export default async function Page() {
-  const data = await fetchData(); // Runs at build time
+  const data = await fetchData(); // Runs on server
   return <div>{data.content}</div>;
 }
 ```
 
 **Benefits:**
-- ⚡ Instant page loads
-- 🔒 Enhanced security
-- 💰 Lower costs
-- 📈 Better SEO
+- ⚡ High performance out of the box
+- 🔄 Fully dynamic capabilities
+- 🌐 Edge deployment for global reach
+- 📈 Excellent SEO
+- 🛠️ Modern React patterns
 
 ### Edge Hosting
 
-Static files are distributed globally across edge networks:
+Sites are deployed to the edge for optimal global performance:
 
-- Content delivered from the nearest location
+- Content delivered from the nearest location worldwide
 - Sub-300ms content propagation
 - Automatic failover and redundancy
 - 99.99% uptime guarantee
+- Scales automatically with traffic
 
 ### React Server Components
 
