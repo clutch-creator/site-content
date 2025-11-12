@@ -1,0 +1,262 @@
+---
+title: "Clutch Documentation"
+description: "Complete documentation for building AI-powered and traditional web experiences with Clutch"
+---
+
+# Clutch Documentation
+
+Welcome to the Clutch documentation! Clutch is an expressive visual builder for creating AI-powered and traditional web experiences that connect to existing backends and services using MCP, powered by Next.js and React.
+
+## 📚 Documentation Overview
+
+### Getting Started
+
+New to Clutch? Start here:
+
+- **[What is Clutch?](/docs/introduction)** - Learn about Clutch
+- **[Features](/docs/features)** - Explore what Clutch can do
+- **[Getting Started](/docs/getting-started)** - Create your first Clutch project
+- **[Core Concepts](/docs/core-concepts)** - Understand fundamental concepts
+
+### Building with Clutch
+
+Learn how to build with Clutch:
+
+- **[Components](/docs/components)** - Explore available components
+- **[State Management](/docs/state-management)** - Manage application state
+- **[Queries & Data Fetching](/docs/queries)** - Fetch and display data
+- **[Custom Components](/docs/custom-components)** - Build your own components
+- **[Helper Functions](/docs/helper-functions)** - Create reusable utilities
+
+### Reference
+
+Complete API documentation:
+
+- **[API Reference](/docs/api-reference)** - Complete API documentation
+- **[TypeScript Types](/docs/api-reference#typescript-types)** - Type definitions
+- **[Component Props](/docs/api-reference#components)** - Component prop references
+
+## 🚀 Quick Links
+
+### Essential Guides
+
+- [Installation](/docs/getting-started#installation)
+- [Project Setup](/docs/getting-started#project-setup)
+- [Creating Pages](/docs/getting-started#creating-your-first-page)
+- [Deploying](/docs/getting-started#building-for-production)
+
+### Popular Topics
+
+- [Visual Builder](/docs/features#visual-builder)
+- [Performance Optimization](/docs/features#performance)
+- [WordPress Integration](/docs/queries#wordpress-integration)
+- [SEO Configuration](/docs/components#seo)
+
+### Advanced Topics
+
+- [Server Components](/docs/core-concepts#react-server-components)
+- [Data Binding](/docs/core-concepts#data-flow)
+- [State Patterns](/docs/state-management#state-patterns)
+- [Custom Hooks](/docs/custom-components#interactive-components)
+
+## 🎯 Common Tasks
+
+### Creating a New Page
+
+```typescript
+// app/about/page.tsx
+export default function AboutPage() {
+  return (
+    <main>
+      <h1>About Us</h1>
+      <p>We build amazing websites with Clutch.</p>
+    </main>
+  );
+}
+```
+
+[Learn more about creating pages →](/docs/getting-started#creating-your-first-page)
+
+### Fetching Data
+
+```typescript
+// Server Component
+async function ProductsPage() {
+  const products = await fetch('https://api.example.com/products')
+    .then(res => res.json());
+  
+  return <ProductGrid products={products} />;
+}
+```
+
+[Learn more about data fetching →](/docs/queries)
+
+### Managing State
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterState } from '@clutch-creator/toolkit';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  useRegisterState('count', count);
+  
+  return (
+    <button onClick={() => setCount(count + 1)}>
+      Count: {count}
+    </button>
+  );
+}
+```
+
+[Learn more about state management →](/docs/state-management)
+
+### Creating Components
+
+```typescript
+type ButtonProps = {
+  variant?: 'primary' | 'secondary';
+  children: React.ReactNode;
+};
+
+export function Button({ variant = 'primary', children }: ButtonProps) {
+  return (
+    <button className={`btn btn-${variant}`}>
+      {children}
+    </button>
+  );
+}
+```
+
+[Learn more about custom components →](/docs/custom-components)
+
+## 📖 Documentation Structure
+
+### By Experience Level
+
+**Beginners:**
+1. [What is Clutch?](/docs/introduction)
+2. [Features](/docs/features)
+3. [Getting Started](/docs/getting-started)
+4. [Core Concepts](/docs/core-concepts)
+5. [Components](/docs/components)
+
+**Intermediate:**
+1. [State Management](/docs/state-management)
+2. [Queries & Data Fetching](/docs/queries)
+3. [Custom Components](/docs/custom-components)
+4. [Helper Functions](/docs/helper-functions)
+
+**Advanced:**
+1. [API Reference](/docs/api-reference)
+2. [Advanced Patterns](/docs/state-management#state-patterns)
+3. [Performance Optimization](/docs/core-concepts#performance-optimization)
+
+### By Use Case
+
+**Building Marketing Sites:**
+- [Getting Started](/docs/getting-started)
+- [SEO Components](/docs/components#seo)
+- [Image Optimization](/docs/components#image)
+- [Analytics](/docs/features#seo--analytics)
+
+**Creating Web Applications:**
+- [State Management](/docs/state-management)
+- [Data Fetching](/docs/queries)
+- [Forms](/docs/components#form-components)
+- [Authentication](/docs/queries#authentication)
+
+**WordPress Integration:**
+- [WordPress REST API](/docs/queries#wordpress-integration)
+- [Content Fetching](/docs/queries#wordpress-rest-api)
+- [Headless WordPress](/docs/features#wordpress-integration)
+
+**Custom Development:**
+- [Custom Components](/docs/custom-components)
+- [Helper Functions](/docs/helper-functions)
+- [TypeScript Types](/docs/api-reference#typescript-types)
+- [Testing](/docs/custom-components#testing-components)
+
+## 🔍 Finding What You Need
+
+### Search Topics
+
+Use the search functionality to find specific topics:
+
+- Components by name (Button, Image, Card, etc.)
+- Features (SEO, performance, state management)
+- Concepts (Server Components, data fetching, routing)
+- API methods (useRegisterState, clutchElementConfig, etc.)
+
+### Browse by Category
+
+- **Fundamentals**: Introduction, Getting Started, Core Concepts
+- **Components**: Built-in and custom components
+- **Data**: Queries, state management, data binding
+- **Extending**: Custom components, helper functions
+- **Reference**: API reference, types, props
+
+## 💡 Examples & Recipes
+
+### Common Patterns
+
+See complete examples of common patterns:
+
+- Building a product listing page
+- Creating a contact form
+- Implementing search and filters
+- Setting up authentication
+- Integrating with WordPress
+- Building a blog
+- Creating landing pages
+
+## 🆘 Getting Help
+
+### Documentation Resources
+
+- **Code Examples**: Every guide includes working code examples
+- **Type Definitions**: Full TypeScript type definitions
+- **Best Practices**: Recommended patterns and approaches
+- **Troubleshooting**: Common issues and solutions
+
+### Community Support
+
+- **Discord**: [Join our community](https://discord.gg/j4bnupeese)
+- **GitHub**: [Report issues](https://github.com/clutch-creator/toolkit/issues)
+- **Discussions**: [Community discussions](https://github.com/clutch-creator/toolkit/discussions)
+
+### Additional Resources
+
+- **Website**: [clutch.io](https://clutch.io)
+- **Blog**: Latest updates and tutorials
+- **Examples**: Sample projects and templates
+- **Videos**: Video tutorials and walkthroughs
+
+## 🔄 Stay Updated
+
+- [Changelog](https://github.com/clutch-creator/toolkit/blob/main/CHANGELOG.md) - See what's new
+- [Roadmap](https://github.com/clutch-creator/toolkit) - Upcoming features
+- [Release Notes](https://github.com/clutch-creator/toolkit/releases) - Version history
+
+## 🤝 Contributing
+
+Help improve the documentation:
+
+- [Contribute on GitHub](https://github.com/clutch-creator/toolkit)
+- Report documentation issues
+- Suggest improvements
+- Share your examples
+
+## 📄 License
+
+Clutch Toolkit is MIT licensed. See the [LICENSE](https://github.com/clutch-creator/toolkit/blob/main/LICENSE) file for details.
+
+---
+
+**Ready to start building?** → [Features](/docs/features) | [Get Started](/docs/getting-started)
+
+**Need help?** → [Join Discord](https://discord.gg/j4bnupeese)
+
+**Have questions?** → [Browse API Reference](/docs/api-reference)

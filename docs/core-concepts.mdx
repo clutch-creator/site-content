@@ -1,0 +1,625 @@
+---
+title: "Core Concepts"
+description: "Understand the fundamental concepts of Clutch"
+---
+
+# Core Concepts
+
+Understanding these core concepts will help you build better Clutch applications and make the most of the platform's capabilities.
+
+## Architecture
+
+### Next.js Foundation
+
+Clutch is built on Next.js, providing fully dynamic, high-performance web experiences:
+
+```typescript
+// Pages can fetch data at build time, request time, or both
+export default async function Page() {
+  const data = await fetchData(); // Runs on server
+  return <div>{data.content}</div>;
+}
+```
+
+**Benefits:**
+- ⚡ High performance out of the box
+- 🔄 Fully dynamic capabilities
+- 🌐 Edge deployment for global reach
+- 📈 Excellent SEO
+- 🛠️ Modern React patterns
+
+### Edge Hosting
+
+Sites are deployed to the edge for optimal global performance:
+
+- Content delivered from the nearest location worldwide
+- Sub-300ms content propagation
+- Automatic failover and redundancy
+- 99.99% uptime guarantee
+- Scales automatically with traffic
+
+### React Server Components
+
+Clutch uses React Server Components for optimal performance:
+
+```typescript
+// Server Component (default in App Router)
+async function ServerComponent() {
+  const data = await fetchData(); // Runs on server only
+  return <div>{data.title}</div>;
+}
+
+// Client Component (marked with 'use client')
+'use client';
+function ClientComponent() {
+  const [state, setState] = useState(0);
+  return <button onClick={() => setState(state + 1)}>{state}</button>;
+}
+```
+
+**Server Components:**
+- No JavaScript sent to browser
+- Direct database/API access
+- Smaller bundle sizes
+
+**Client Components:**
+- Interactive with state and events
+- Access to browser APIs
+- Required for hooks
+
+## Components
+
+### Component Hierarchy
+
+Clutch applications are built with a tree of components:
+
+```
+Page
+├── Header
+│   ├── Logo
+│   └── Navigation
+│       ├── Link
+│       └── Link
+├── Main
+│   ├── Hero
+│   │   ├── Heading
+│   │   ├── Text
+│   │   └── Button
+│   └── Content
+│       └── Section
+└── Footer
+```
+
+### Component Props
+
+Components receive data through props:
+
+```typescript
+type ButtonProps = {
+  variant?: 'primary' | 'secondary';
+  size?: 'small' | 'medium' | 'large';
+  children: React.ReactNode;
+  onClick?: () => void;
+};
+
+export function Button({ 
+  variant = 'primary', 
+  size = 'medium',
+  children,
+  onClick 
+}: ButtonProps) {
+  return (
+    <button 
+      className={`btn btn-${variant} btn-${size}`}
+      onClick={onClick}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+### Component Composition
+
+Build complex UIs by composing simple components:
+
+```typescript
+export function Card({ children }: { children: React.ReactNode }) {
+  return <div className="card">{children}</div>;
+}
+
+export function CardHeader({ children }: { children: React.ReactNode }) {
+  return <div className="card-header">{children}</div>;
+}
+
+export function CardBody({ children }: { children: React.ReactNode }) {
+  return <div className="card-body">{children}</div>;
+}
+
+// Usage
+<Card>
+  <CardHeader>
+    <h2>Title</h2>
+  </CardHeader>
+  <CardBody>
+    <p>Content goes here</p>
+  </CardBody>
+</Card>
+```
+
+## State Management
+
+### Local State
+
+Component-level state for UI interactions:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+
+export function Counter() {
+  const [count, setCount] = useState(0);
+  
+  return (
+    <div>
+      <p>Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}
+```
+
+### Global State
+
+Share state across components using Clutch's state registration:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterState } from '@clutch-creator/toolkit';
+
+export function GlobalCounter() {
+  const [count, setCount] = useState(0);
+  
+  // Make this state globally accessible
+  useRegisterState('globalCount', count);
+  
+  return (
+    <div>
+      <p>Global Count: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </div>
+  );
+}
+
+// Other components can bind to 'globalCount' in the visual editor
+```
+
+### URL State
+
+Store state in URL parameters for shareable states:
+
+```typescript
+'use client';
+
+import { useRouter, useSearchParams } from 'next/navigation';
+import { updateUrlSearchParams } from '@clutch-creator/toolkit';
+
+export function FilterPanel() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const category = searchParams.get('category') || 'all';
+  
+  const setCategory = (newCategory: string) => {
+    updateUrlSearchParams({ category: newCategory }, router);
+  };
+  
+  return (
+    <div>
+      <button onClick={() => setCategory('books')}>Books</button>
+      <button onClick={() => setCategory('music')}>Music</button>
+    </div>
+  );
+}
+```
+
+## Data Flow
+
+### Data Fetching
+
+Fetch data in Server Components:
+
+```typescript
+// app/products/page.tsx
+async function ProductsPage() {
+  // Fetch at build time
+  const products = await fetch('https://api.example.com/products')
+    .then(res => res.json());
+  
+  return (
+    <div>
+      {products.map(product => (
+        <ProductCard key={product.id} product={product} />
+      ))}
+    </div>
+  );
+}
+```
+
+### Data Binding
+
+Bind fetched data to component props:
+
+```typescript
+type Product = {
+  id: string;
+  name: string;
+  price: number;
+  image: string;
+};
+
+function ProductCard({ product }: { product: Product }) {
+  return (
+    <div className="product-card">
+      <img src={product.image} alt={product.name} />
+      <h3>{product.name}</h3>
+      <p>${product.price}</p>
+    </div>
+  );
+}
+```
+
+### Data Transformation
+
+Transform data before rendering:
+
+```typescript
+async function BlogPage() {
+  const posts = await fetchPosts();
+  
+  // Transform data
+  const recentPosts = posts
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5)
+    .map(post => ({
+      ...post,
+      excerpt: post.content.substring(0, 150) + '...',
+    }));
+  
+  return <PostList posts={recentPosts} />;
+}
+```
+
+## Actions & Events
+
+### Event Handlers
+
+Handle user interactions:
+
+```typescript
+'use client';
+
+function InteractiveButton() {
+  const handleClick = () => {
+    console.log('Button clicked!');
+  };
+  
+  const handleHover = () => {
+    console.log('Button hovered!');
+  };
+  
+  return (
+    <button 
+      onClick={handleClick}
+      onMouseEnter={handleHover}
+    >
+      Click me
+    </button>
+  );
+}
+```
+
+### Registered Actions
+
+Register actions for use in the visual editor:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+import { useRegisterAction } from '@clutch-creator/toolkit';
+
+export function AccordionItem({ title, children }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  useRegisterAction({
+    name: 'toggle',
+    action: () => setIsOpen(!isOpen),
+    props: {
+      'data-open': isOpen,
+    },
+    styleSelectors: [
+      { name: 'Open', value: '&[data-open="true"]' },
+      { name: 'Closed', value: '&[data-open="false"]' },
+    ],
+  });
+  
+  return (
+    <div className="accordion-item">
+      <button onClick={() => setIsOpen(!isOpen)}>
+        {title}
+      </button>
+      {isOpen && <div>{children}</div>}
+    </div>
+  );
+}
+```
+
+### Action Chains
+
+Combine multiple actions:
+
+```typescript
+'use client';
+
+function FormComponent() {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // 1. Validate data
+    const isValid = validateForm();
+    if (!isValid) return;
+    
+    // 2. Submit to API
+    const result = await submitData();
+    
+    // 3. Update UI
+    showSuccessMessage();
+    
+    // 4. Navigate
+    router.push('/success');
+  };
+  
+  return <form onSubmit={handleSubmit}>...</form>;
+}
+```
+
+## Styling
+
+### CSS Classes
+
+Use standard CSS classes with Tailwind or custom CSS:
+
+```typescript
+function StyledButton() {
+  return (
+    <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+      Click me
+    </button>
+  );
+}
+```
+
+### Style Selectors
+
+Define style selectors for visual editing:
+
+```typescript
+'use client';
+
+import { useRegisterAction } from '@clutch-creator/toolkit';
+
+function InteractiveCard() {
+  const [isHovered, setIsHovered] = useState(false);
+  
+  useRegisterAction({
+    name: 'setHover',
+    action: setIsHovered,
+    props: {
+      'data-hovered': isHovered,
+    },
+    styleSelectors: [
+      { name: 'Default', value: '&' },
+      { name: 'Hovered', value: '&[data-hovered="true"]' },
+    ],
+  });
+  
+  return (
+    <div 
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      Card content
+    </div>
+  );
+}
+```
+
+### Design Tokens
+
+Use design tokens for consistent styling:
+
+```typescript
+// theme.ts
+export const theme = {
+  colors: {
+    primary: '#3B82F6',
+    secondary: '#10B981',
+    accent: '#F59E0B',
+  },
+  spacing: {
+    small: '0.5rem',
+    medium: '1rem',
+    large: '2rem',
+  },
+  typography: {
+    heading: 'Inter, sans-serif',
+    body: 'Open Sans, sans-serif',
+  },
+};
+```
+
+## Performance Optimization
+
+### Image Optimization
+
+Use the Image component for automatic optimization:
+
+```typescript
+import { Image } from '@clutch-creator/toolkit/components/Image';
+
+function OptimizedImage() {
+  return (
+    <Image
+      src="/hero.jpg"
+      alt="Hero"
+      width={1200}
+      height={600}
+      priority // Load immediately for above-fold images
+    />
+  );
+}
+```
+
+### Code Splitting
+
+Lazy load components:
+
+```typescript
+import dynamic from 'next/dynamic';
+
+// Component loads only when needed
+const HeavyComponent = dynamic(() => import('./HeavyComponent'), {
+  loading: () => <p>Loading...</p>,
+});
+
+function Page() {
+  return (
+    <div>
+      <HeavyComponent />
+    </div>
+  );
+}
+```
+
+### Caching Strategies
+
+Configure caching for data fetching:
+
+```typescript
+// Revalidate every hour
+async function getProducts() {
+  const res = await fetch('https://api.example.com/products', {
+    next: { revalidate: 3600 },
+  });
+  return res.json();
+}
+
+// Never cache (always fresh)
+async function getLiveData() {
+  const res = await fetch('https://api.example.com/live', {
+    cache: 'no-store',
+  });
+  return res.json();
+}
+```
+
+## Routing
+
+### File-Based Routing
+
+Pages are defined by file structure:
+
+```
+app/
+├── page.tsx           → /
+├── about/
+│   └── page.tsx       → /about
+├── blog/
+│   ├── page.tsx       → /blog
+│   └── [slug]/
+│       └── page.tsx   → /blog/:slug
+└── products/
+    └── [id]/
+        └── page.tsx   → /products/:id
+```
+
+### Dynamic Routes
+
+Access route parameters:
+
+```typescript
+// app/blog/[slug]/page.tsx
+export default function BlogPost({ params }: { params: { slug: string } }) {
+  return <h1>Post: {params.slug}</h1>;
+}
+
+// Generate static paths at build time
+export async function generateStaticParams() {
+  const posts = await fetchPosts();
+  return posts.map(post => ({ slug: post.slug }));
+}
+```
+
+### Navigation
+
+Navigate between pages:
+
+```typescript
+'use client';
+
+import { useRouter } from 'next/navigation';
+import { Link } from '@clutch-creator/toolkit/components/Link';
+
+function Navigation() {
+  const router = useRouter();
+  
+  return (
+    <nav>
+      <Link href="/">Home</Link>
+      <Link href="/about">About</Link>
+      <button onClick={() => router.push('/contact')}>
+        Contact
+      </button>
+    </nav>
+  );
+}
+```
+
+## Best Practices
+
+### 1. Component Design
+- Keep components small and focused
+- Use composition over inheritance
+- Define clear prop interfaces with TypeScript
+
+### 2. State Management
+- Start with local state
+- Lift state up when needed
+- Use URL state for shareable states
+
+### 3. Performance
+- Use Server Components by default
+- Add 'use client' only when needed
+- Optimize images with the Image component
+- Implement code splitting for large components
+
+### 4. Data Fetching
+- Fetch data in Server Components
+- Cache responses appropriately
+- Handle loading and error states
+
+### 5. Styling
+- Use design tokens for consistency
+- Leverage Tailwind for utility-first CSS
+- Define style selectors for visual editing
+
+---
+
+**Next Steps:**
+- [Components](/docs/components) - Explore available components
+- [State Management](/docs/state-management) - Deep dive into state
+- [Queries](/docs/queries) - Learn about data fetching
+- [Custom Components](/docs/custom-components) - Build your own components
